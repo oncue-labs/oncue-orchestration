@@ -1,0 +1,353 @@
+# OnCue 백엔드 MVP 구현 계획
+
+> **에이전트 작업자 필수 안내:** 이 계획을 작업별로 실행할 때는 `superpowers:subagent-driven-development` 또는 `superpowers:executing-plans`를 사용한다. 작업 단계는 추적할 수 있도록 체크박스(`- [ ]`)로 작성되어 있다.
+
+**목표:** 사용자 인증, 페르소나·시나리오 데이터, 예약, 안전성 판정, 대화 정책 조합, 통화 세션 제어와 상태 저장을 담당하는 Spring Boot 백엔드를 구축한다.
+
+**아키텍처:** 기능 중심의 단순한 모듈형 계층 구조를 사용한다. 각 기능은 controller, service, model, repository로 구성하고 외부 시스템은 `identity_provider`, `voice_server`, `safety_classifier`라는 명시적인 경계로 분리한다. 헥사고날 아키텍처를 전체 코드에 적용하지 않는다.
+
+**기술 스택:** Java 21, Spring Boot 3.2.3, Gradle, MySQL 8, Redis 7, Flyway, Spring Security, JPA, JUnit 5, Mockito, AssertJ, Testcontainers.
+
+**사양:** `docs/superpowers/specs/2026-09-08-oncue-mvp-design.md`, `docs/superpowers/specs/2026-09-09-oncue-mvp-api-data-contract.md`
+
+## 전체 제약 조건
+
+- API 경계에서는 `personaKey`와 `scenarioKey`를 사용하고, DB 내부에서만 `BIGINT UNSIGNED AUTO_INCREMENT` ID를 사용한다.
+- 활성 상태인 페르소나와 시나리오의 조합은 모두 허용하며, 조합 허용 목록을 만들거나 검증하지 않는다.
+- 페르소나와 시나리오의 기본 지시사항·대화 규칙은 각 테이블에 저장하고, MVP에서는 `call_combinations`와 `dialogue_policies` 테이블을 만들지 않는다.
+- API 시간은 ISO-8601 UTC를 사용하고 JSON 생성 시각 속성은 `createdAt`으로 통일한다. DB의 `created_at`은 Java의 `createdAt`으로 매핑한다.
+- 통화 음성과 대화 텍스트를 저장하지 않는다.
+- 통화 5분 전 수정·취소 마감, 1회 시도, 60초 수신 대기, 최대 5분 통화 시간을 적용한다.
+- 결정적 안전 규칙을 먼저 실행하고, 위험 신호가 있을 때만 안전성 판정 LLM을 호출하며, 판정 실패·불확실 시 차단한다.
+- 스키마는 Flyway가 소유하고 JPA는 `ddl-auto: validate`로 동작한다.
+- 반복 예약, 관리자 API, Android API, 사용자 페르소나 생성, 동적 음성 설정은 추가하지 않는다.
+
+---
+
+### 작업 1: Spring Boot 애플리케이션 뼈대 만들기
+
+**파일:**
+- 생성: `/Users/yeonny0723/orca/oncue-backend/settings.gradle`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/build.gradle`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/Dockerfile`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/src/main/java/com/oncue/OncueApplication.java`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/src/main/java/com/oncue/common/config/ApplicationProperties.java`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/src/main/resources/application.yml`
+- 테스트: `/Users/yeonny0723/orca/oncue-backend/src/test/java/com/oncue/OncueApplicationTest.java`
+
+**인터페이스:**
+- MySQL, Redis, JWT 서명, 외부 제공자 설정을 읽고 Spring 컨텍스트를 실행할 수 있어야 한다.
+
+- [ ] **단계 1: 컨텍스트 로딩 실패 테스트 작성**
+
+```java
+@SpringBootTest
+class OncueApplicationTest {
+    @Test
+    void applicationContextLoads() {
+    }
+}
+```
+
+- [ ] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `./gradlew test --tests com.oncue.OncueApplicationTest`
+
+예상 결과: 애플리케이션과 Gradle 프로젝트가 없으므로 실패한다.
+
+- [ ] **단계 3: 최소 애플리케이션과 빌드 설정 작성**
+
+Java 21, Spring Boot 3.2.3, Web, Validation, Security, JPA, Redis, Flyway, MySQL 런타임 의존성을 설정한다. `ddl-auto: validate`, 환경 변수 기반 비밀값, `/actuator/health`를 설정한다.
+
+- [ ] **단계 4: 테스트 실행 및 통과 확인**
+
+실행: `./gradlew test --tests com.oncue.OncueApplicationTest`
+
+예상 결과: 통과한다.
+### 작업 2: Flyway 스키마와 제공자 데이터 만들기
+
+**파일:**
+- 생성: `/Users/yeonny0723/orca/oncue-backend/src/main/resources/db/migration/V1__create_users_login_accounts_personas_scenarios.sql`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/src/main/resources/db/migration/V2__create_reservations_and_call_sessions.sql`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/src/main/resources/db/migration/V3__seed_mvp_personas_and_scenarios.sql`
+- 생성: `/Users/yeonny0723/orca/oncue-backend/src/test/java/com/oncue/database/FlywaySchemaIntegrationTest.java`
+
+**인터페이스:**
+- `users`, `user_login_accounts`, `personas`, `scenarios`, `reservations`, `call_sessions` 테이블을 제공한다.
+- 중복되지 않는 페르소나·시나리오 key와 MVP 콘텐츠를 제공한다. 조합 테이블은 만들지 않는다.
+
+- [ ] **단계 1: 테이블과 제약 조건에 대한 통합 테스트 작성**
+
+6개 테이블의 존재 여부, `(provider, provider_user_id)` 유니크, `personas.key`와 `scenarios.key` 유니크, `call_sessions.reservation_id` 유니크를 검증한다.
+
+- [ ] **단계 2: 통합 테스트 실행 및 실패 확인**
+
+실행: `./gradlew integrationTest --tests com.oncue.database.FlywaySchemaIntegrationTest`
+
+예상 결과: migration과 통합 테스트 작업이 없으므로 실패한다.
+
+- [ ] **단계 3: migration 작성**
+
+기본키는 `BIGINT UNSIGNED AUTO_INCREMENT`, 상태값은 `VARCHAR`, 시간은 UTC `DATETIME(6)`, 지시사항과 사용자 입력은 `TEXT`, `dialogue_rules`는 `JSON`으로 만든다. `scenarios`에 `persona_id`를 추가하지 않고, 페르소나·시나리오 조합 제약도 추가하지 않는다.
+
+- [ ] **단계 4: MVP 페르소나·시나리오 seed 추가**
+
+`santa`, `princess`, `friend`와 `child-roleplay`, `go-home`, `travel-friend-introduction` 같은 안정적인 key를 사용한다. 이미지, 미리듣기 음성, voice ID는 제공자 데이터로 넣는다.
+
+- [ ] **단계 5: 통합 테스트 실행 및 통과 확인**
+
+실행: `./gradlew integrationTest --tests com.oncue.database.FlywaySchemaIntegrationTest`
+
+예상 결과: MySQL Testcontainers에서 통과한다.
+
+### 작업 3: Kakao/X 로그인 계정 연결 구현
+
+**파일:**
+- 생성: `src/main/java/com/oncue/auth/controller/AuthController.java`
+- 생성: `src/main/java/com/oncue/auth/controller/request/LoginRequest.java`
+- 생성: `src/main/java/com/oncue/auth/controller/response/LoginResponse.java`
+- 생성: `src/main/java/com/oncue/auth/service/AuthService.java`
+- 생성: `src/main/java/com/oncue/auth/model/User.java`
+- 생성: `src/main/java/com/oncue/auth/model/UserLoginAccount.java`
+- 생성: `src/main/java/com/oncue/auth/repository/UserRepository.java`
+- 생성: `src/main/java/com/oncue/auth/repository/UserLoginAccountRepository.java`
+- 생성: `src/main/java/com/oncue/auth/identity_provider/IdentityProviderClient.java`
+- 생성: `src/main/java/com/oncue/auth/identity_provider/KakaoIdentityProviderClient.java`
+- 생성: `src/main/java/com/oncue/auth/identity_provider/XIdentityProviderClient.java`
+- 생성: `src/main/java/com/oncue/common/security/AccessTokenService.java`
+- 테스트: `src/test/java/com/oncue/auth/AuthServiceTest.java`
+
+**인터페이스:**
+- `IdentityProviderClient#resolve(String authorizationCode): ExternalIdentity`
+- `AuthService#login(LoginRequest): LoginResponse`
+- `AccessTokenService#issue(User): AccessToken`
+
+- [ ] **단계 1: 외부 identity 조회와 계정 재사용 테스트 작성**
+
+첫 로그인, 반복 로그인, provider 계정 충돌, 지원하지 않는 provider 거부를 mock client로 테스트한다.
+
+- [ ] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `./gradlew test --tests com.oncue.auth.AuthServiceTest`
+
+예상 결과: auth 기능이 없으므로 실패한다.
+
+- [ ] **단계 3: auth 서비스와 provider 경계 구현**
+
+Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그인 시 사용자를 생성하며 백엔드 access token을 발급한다. provider별 HTTP 응답 파싱은 각 `identity_provider` client 안에 둔다.
+
+- [ ] **단계 4: controller와 보안 필터 추가**
+
+`KAKAO`, `X`만 허용하고, 이후 API 요청은 `Authorization: Bearer` access token으로 인증한다.
+
+- [ ] **단계 5: 테스트 실행 및 통과 확인**
+
+실행: `./gradlew test --tests com.oncue.auth.AuthServiceTest`
+
+예상 결과: 통과한다.
+
+### 작업 4: 페르소나·시나리오 조회와 대화 정책 조합 구현
+
+**파일:**
+- 생성: `src/main/java/com/oncue/combination/model/Persona.java`
+- 생성: `src/main/java/com/oncue/combination/model/Scenario.java`
+- 생성: `src/main/java/com/oncue/combination/repository/PersonaRepository.java`
+- 생성: `src/main/java/com/oncue/combination/repository/ScenarioRepository.java`
+- 생성: `src/main/java/com/oncue/conversation/model/DialoguePolicy.java`
+- 생성: `src/main/java/com/oncue/conversation/service/DialoguePolicyService.java`
+- 생성: `src/main/java/com/oncue/conversation/builder/DialoguePolicyBuilder.java`
+- 생성: `src/main/java/com/oncue/conversation/rules/DialogueRulesMerger.java`
+- 테스트: `src/test/java/com/oncue/conversation/DialoguePolicyBuilderTest.java`
+
+**인터페이스:**
+- `PersonaRepository#findActiveByKey(String): Optional<Persona>`
+- `ScenarioRepository#findActiveByKey(String): Optional<Scenario>`
+- `DialoguePolicyService#build(Persona, Scenario, String scenarioContext, String callGoal, Locale): DialoguePolicy`
+
+- [ ] **단계 1: 정책 조합 테스트 작성**
+
+두 정책이 모두 있는 경우, 페르소나 정책만 있는 경우, 시나리오 정책만 있는 경우, 빈 규칙, 시나리오 규칙 우선순위, 사용자 입력이 상위 지시사항이 되지 않는 경우를 테스트한다.
+
+- [ ] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `./gradlew test --tests com.oncue.conversation.DialoguePolicyBuilderTest`
+
+예상 결과: 정책 모델과 builder가 없으므로 실패한다.
+
+- [ ] **단계 3: 구조화된 정책 모델과 병합 규칙 구현**
+
+우선순위는 `공통 안전 정책 > 시나리오 규칙 > 페르소나 규칙 > 사용자 컨텍스트·목표`로 한다. 지시사항이나 규칙이 없으면 기본 정책을 사용한다. 정책 조합을 위해 별도 LLM 호출을 하지 않는다.
+
+- [ ] **단계 4: 테스트 실행 및 통과 확인**
+
+실행: `./gradlew test --tests com.oncue.conversation.DialoguePolicyBuilderTest`
+
+예상 결과: 통과한다.
+
+### 작업 5: 예약 생성·수정·조회·취소 구현
+
+**파일:**
+- 생성: `src/main/java/com/oncue/reservation/controller/ReservationController.java`
+- 생성: `src/main/java/com/oncue/reservation/controller/request/CreateReservationRequest.java`
+- 생성: `src/main/java/com/oncue/reservation/controller/request/UpdateReservationRequest.java`
+- 생성: `src/main/java/com/oncue/reservation/controller/response/ReservationResponse.java`
+- 생성: `src/main/java/com/oncue/reservation/service/ReservationService.java`
+- 생성: `src/main/java/com/oncue/reservation/model/Reservation.java`
+- 생성: `src/main/java/com/oncue/reservation/repository/ReservationRepository.java`
+- 생성: `src/main/java/com/oncue/reservation/scheduler/ReservationLockService.java`
+- 생성: `src/main/java/com/oncue/common/error/OncueExceptionHandler.java`
+- 테스트: `src/test/java/com/oncue/reservation/ReservationServiceTest.java`
+- 테스트: `src/test/java/com/oncue/reservation/ReservationControllerTest.java`
+
+**인터페이스:**
+- `ReservationService#create(UserId, CreateReservationRequest): ReservationResponse`
+- `ReservationService#update(UserId, ReservationId, UpdateReservationRequest): ReservationResponse`
+- `ReservationService#cancel(UserId, ReservationId): ReservationResponse`
+- `ReservationService#list(UserId): List<ReservationResponse>`
+
+- [ ] **단계 1: 비즈니스 규칙 테스트 작성**
+
+활성 key 개별 조회, 조합 검증을 하지 않는 동작, 현지 시각 변환, 5분 전 마감, 같은 사용자의 겹치는 예약 거부, 겹치지 않는 여러 예약 허용, 안전 차단, 취소, 소유권 확인을 테스트한다.
+
+- [ ] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `./gradlew test --tests com.oncue.reservation.ReservationServiceTest`
+
+예상 결과: 예약 코드가 없으므로 실패한다.
+
+- [ ] **단계 3: 예약 저장과 시간 변환 구현**
+
+`personaKey`, `scenarioKey`, `scenarioContext`, `callGoal`, `scheduledAtLocal`, `timeZone`을 받고 key를 개별 조회한 뒤 DB ID를 저장한다. `scheduled_at_utc`를 계산한다.
+
+- [ ] **단계 4: 겹침·마감 검사 구현**
+
+트랜잭션 안에서 해당 사용자의 예약 시간대를 조회하고, 마감 시각 이후 수정·취소를 거부하며, 5분 통화 시간대가 겹치면 거부한다.
+
+- [ ] **단계 5: 안전성 판정 서비스 연결**
+
+결정적 규칙을 먼저 실행한다. 규칙이 위험 신호를 찾은 경우에만 `SafetyClassifierClient`를 호출하고, 위험하거나 불확실하면 `SAFETY_BLOCKED`로 응답하며 예약을 저장·수정하지 않는다.
+
+- [ ] **단계 6: REST controller와 공통 오류 추가**
+
+`POST /api/v1/reservations`, `GET /api/v1/reservations`, `GET /api/v1/reservations/{id}`, `PATCH /api/v1/reservations/{id}`, `POST /api/v1/reservations/{id}/cancel`을 구현한다.
+
+- [ ] **단계 7: 테스트 실행 및 통과 확인**
+
+실행: `./gradlew test --tests com.oncue.reservation.ReservationServiceTest --tests com.oncue.reservation.ReservationControllerTest`
+
+예상 결과: 통과한다.
+
+### 작업 6: 예약 스케줄링과 보이스 세션 제어 구현
+
+**파일:**
+- 생성: `src/main/java/com/oncue/call/model/CallSession.java`
+- 생성: `src/main/java/com/oncue/call/model/CallStatus.java`
+- 생성: `src/main/java/com/oncue/call/model/CallOutcome.java`
+- 생성: `src/main/java/com/oncue/call/model/CallEndReason.java`
+- 생성: `src/main/java/com/oncue/call/repository/CallSessionRepository.java`
+- 생성: `src/main/java/com/oncue/call/voice_server/VoiceServerClient.java`
+- 생성: `src/main/java/com/oncue/call/voice_server/VoiceServerRequest.java`
+- 생성: `src/main/java/com/oncue/call/service/CallSessionService.java`
+- 수정: `src/main/java/com/oncue/reservation/scheduler/ReservationScheduler.java`
+- 테스트: `src/test/java/com/oncue/call/CallSessionServiceTest.java`
+
+**인터페이스:**
+- `VoiceServerClient#createSession(CreateVoiceSessionRequest): VoiceSessionResponse`
+- `VoiceServerClient#sendTermination(String voiceSessionId): void`
+- `CallSessionService#prepare(ReservationId): CallSession`
+- `CallSessionService#applyEvent(SessionEvent): void`
+
+- [ ] **단계 1: 상태 전이 테스트 작성**
+
+`PREPARING → RINGING → CONNECTING → IN_CALL → ENDED`, `RINGING → MISSED`, `CONNECTING → FAILED`, 중복 이벤트와 종료 상태 이후 이벤트를 테스트한다.
+
+- [ ] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `./gradlew test --tests com.oncue.call.CallSessionServiceTest`
+
+예상 결과: 세션 상태 관리가 없으므로 실패한다.
+
+- [ ] **단계 3: 통화 세션 모델과 전이 구현**
+
+예약 하나당 세션 하나만 만들고 `callStatus`, `callOutcome`, `callEndReason`, 시간, 외부 `voiceSessionId`를 저장한다. 음성·대화 텍스트는 저장하지 않는다.
+
+- [ ] **단계 4: 스케줄러와 보이스 서버 client 구현**
+
+준비 시각에 예약을 조회하고, 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 세션을 생성한다. 정책과 필요한 세션 정보만 보낸다.
+
+- [ ] **단계 5: 테스트 실행 및 통과 확인**
+
+실행: `./gradlew test --tests com.oncue.call.CallSessionServiceTest`
+
+예상 결과: 통과한다.
+
+### 작업 7: 연결 토큰과 보이스 상태 이벤트 구현
+
+**파일:**
+- 생성: `src/main/java/com/oncue/call/controller/CallSessionController.java`
+- 생성: `src/main/java/com/oncue/call/controller/response/ConnectionTokenResponse.java`
+- 생성: `src/main/java/com/oncue/call/service/ConnectionTokenService.java`
+- 생성: `src/main/java/com/oncue/call/voice_server/VoiceStatusEventRequest.java`
+- 생성: `src/main/java/com/oncue/call/controller/InternalCallSessionController.java`
+- 생성: `src/main/java/com/oncue/common/security/ServiceTokenValidator.java`
+- 테스트: `src/test/java/com/oncue/call/ConnectionTokenServiceTest.java`
+- 테스트: `src/test/java/com/oncue/call/InternalCallSessionControllerTest.java`
+
+**인터페이스:**
+- `ConnectionTokenService#issue(UserId, SessionId): ConnectionTokenResponse`
+- `CallSessionService#applyEvent(SessionEvent): void`
+
+- [ ] **단계 1: 토큰·이벤트 테스트 작성**
+
+소유자만 토큰을 발급받는지, 만료·종료 세션을 거부하는지, 토큰의 `sessionId`, `userId`, `jti`, `exp`, 서비스 토큰 인증, 중복 이벤트 ID를 테스트한다.
+
+- [ ] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `./gradlew test --tests com.oncue.call.ConnectionTokenServiceTest --tests com.oncue.call.InternalCallSessionControllerTest`
+
+예상 결과: 토큰과 내부 이벤트 코드가 없으므로 실패한다.
+
+- [ ] **단계 3: 서명된 연결 토큰 구현**
+
+백엔드 개인키로 짧은 만료 시간의 토큰을 서명한다. voice URL, 토큰, `createdAt`, `expiresAt`, 임시 ICE 서버 자격 정보를 반환한다. 모바일 access token은 보이스 서버 요청에 넣지 않는다.
+
+- [ ] **단계 4: 내부 상태 이벤트 처리 구현**
+
+보이스 서버를 별도로 인증하고, 합법적인 상태 전이를 확인하며, 같은 `eventId`는 상태를 중복 변경하지 않고 이미 접수된 것으로 처리한다.
+
+- [ ] **단계 5: 테스트 실행 및 통과 확인**
+
+실행: `./gradlew test --tests com.oncue.call.ConnectionTokenServiceTest --tests com.oncue.call.InternalCallSessionControllerTest`
+
+예상 결과: 통과한다.
+
+### 작업 8: 통합 검증과 Docker 상태 확인 추가
+
+**파일:**
+- 생성: `src/test/java/com/oncue/integration/ReservationToCallIntegrationTest.java`
+- 생성: `src/main/java/com/oncue/common/web/RequestIdFilter.java`
+- 수정: `src/main/resources/application.yml`
+- 수정: `Dockerfile`
+
+**인터페이스:**
+- 백엔드가 음성을 중계하지 않고 예약부터 보이스 세션 경계까지 동작하는지 검증한다.
+
+- [ ] **단계 1: 백엔드 전체 흐름 통합 테스트 작성**
+
+MySQL과 Redis Testcontainers를 사용한다. 사용자 생성, key를 이용한 안전한 예약, 통화 세션 준비, 연결 토큰 발급, `IN_CALL`·`ENDED` 이벤트를 수행하고 저장된 상태를 검증한다.
+
+- [ ] **단계 2: 통합 테스트 실행 및 실패 확인**
+
+실행: `./gradlew integrationTest --tests com.oncue.integration.ReservationToCallIntegrationTest`
+
+예상 결과: 백엔드 경계가 연결되기 전이므로 실패한다.
+
+- [ ] **단계 3: request ID, health check, 안전한 컨테이너 설정 추가**
+
+오류 응답에 `requestId`와 `createdAt`을 넣고, 비밀값을 노출하지 않는 의존성 health check를 제공하며, Docker 애플리케이션을 non-root 사용자로 실행한다.
+
+- [ ] **단계 4: 전체 백엔드 검증 실행**
+
+실행: `./gradlew test integrationTest`
+
+예상 결과: 통과한다.
