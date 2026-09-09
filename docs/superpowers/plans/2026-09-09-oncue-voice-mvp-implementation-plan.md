@@ -2,7 +2,7 @@
 
 > **에이전트 작업자 필수 안내:** 이 계획을 작업별로 실행할 때는 `superpowers:subagent-driven-development` 또는 `superpowers:executing-plans`를 사용한다. 작업 단계는 추적할 수 있도록 체크박스(`- [ ]`)로 작성되어 있다.
 
-**목표:** provider 교체가 가능한 Python 음성 서비스를 먼저 만들고, 하나의 Public STT·LLM·TTS provider 조합과 하위 모델·voice 설정을 Jupyter notebook에서 검증한 뒤, 인증된 WebRTC 통화와 상태 callback을 구현한다.
+**목표:** provider 교체가 가능한 Python 음성 서비스를 먼저 만들고, 하나의 Public STT·LLM·TTS provider 조합과 하위 모델·voice 설정을 Jupyter notebook에서 검증한 뒤, 인증된 WebRTC 통화와 최종 결과 callback을 구현한다.
 
 **아키텍처:** `src/oncue_voice` 패키지 안에서 provider interface·factory, 대화 정책·runtime, session, media를 기능별로 나눈다. 대화 runtime은 provider SDK에 직접 의존하지 않고 공통 interface를 사용한다. `notebooks/voice_persona_scenario_evaluation.ipynb`는 실제 `oncue-voice` service code를 사용해 평가하며, notebook 안에 STT·LLM·TTS나 별도 대화 처리 모듈을 구현하지 않는다.
 
@@ -212,7 +212,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 - `ConnectionClaims`는 `sessionId`, `userId`, `exp`, `jti`, `scope`를 가진다.
 - `SessionService#create(request: CreateSessionRequest): VoiceSession`
 - `SessionService#close(session_id: str, reason: str): None`
-- `CreateSessionRequest`는 `sessionId`, `userId`, `policy`, `expiresAt`을 가진다. `VoiceSession`은 `sessionId`, `userId`, `status`, `createdAt`을 가진다.
+- `CreateSessionRequest`는 `sessionId`, `userId`, `policy`, `expiresAt`을 가진다. `expiresAt`은 준비된 보이스 세션을 정리할 만료 시각이며 연결 시작 시각이나 연결 토큰의 만료 시각이 아니다. `VoiceSession`은 `sessionId`, `userId`, `status`, `createdAt`을 가진다.
 
 - [ ] **단계 1: 토큰 검증 테스트 작성**
 
@@ -234,24 +234,24 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 예상 결과: 통과한다.
 
-### 작업 6: 내부 세션 제어와 상태 callback 구현
+### 작업 6: 내부 세션 제어와 최종 결과 callback 구현
 
 **파일:**
 - 생성: `src/oncue_voice/api/http.py`
 - 생성: `src/oncue_voice/api/schemas.py`
-- 생성: `src/oncue_voice/api/events.py`
-- 생성: `src/oncue_voice/session/events.py`
+- 생성: `src/oncue_voice/api/results.py`
+- 생성: `src/oncue_voice/session/results.py`
 - 생성: `tests/unit/api/test_session_api.py`
 
 **인터페이스:**
 - `POST /internal/v1/voice-sessions`
-- `POST /internal/v1/voice-sessions/{session_id}/terminate`
-- `VoiceStatusCallbackClient#sendEvent(session_id: str, event: SessionEvent): None`가 백엔드의 `POST /internal/v1/call-sessions/{session_id}/events`를 호출한다.
-- `SessionEvent`는 `eventId`, `callStatus`, `callOutcome`, `callEndReason`, `createdAt`을 가진다. terminal이 아닌 이벤트의 `callOutcome`과 `callEndReason`은 null이다.
+- `POST /internal/v1/voice-sessions/{voiceSessionId}/terminate`
+- `VoiceCallResultCallbackClient#sendResult(call_session_id: str, result: CallResult): None`가 백엔드의 `POST /internal/v1/call-sessions/{callSessionId}/result`를 호출한다.
+- `CallResult`는 `voiceSessionId`, `callStatus`, `callOutcome`, `startedAt`, `endedAt`을 가진다.
 
 - [ ] **단계 1: 세션 생성·종료 API 테스트 작성**
 
-서비스 간 인증, 필수 대화 정책 필드, 중복 세션 생성의 멱등성, 종료된 세션 처리를 검증한다. terminal event에 `callOutcome`, `callEndReason`을 담을 수 있는 schema도 검증한다.
+서비스 간 인증, 필수 대화 정책 필드, 중복 세션 생성의 멱등성, 종료된 세션 처리를 검증한다. 최종 결과에 `callStatus`와 `callOutcome`을 담을 수 있는 schema도 검증한다.
 
 - [ ] **단계 2: API 테스트 실행 및 실패 확인**
 
@@ -261,7 +261,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 - [ ] **단계 3: 내부 제어 route와 callback client 구현**
 
-백엔드 요청에는 별도의 서비스 자격 증명을 사용한다. 모바일 사용자 access token은 내부 route에서 받지 않는다. 상태 이벤트는 타입이 지정된 callback client로 보내고 `eventId`를 포함해 중복 이벤트를 안전하게 처리한다.
+백엔드 요청에는 별도의 서비스 자격 증명을 사용한다. 모바일 사용자 access token은 내부 route에서 받지 않는다. 세션 생성 시에는 정책과 만료 시각을 저장할 뿐 실제 STT·LLM·TTS provider 연결을 열지 않는다. 사용자가 WebRTC 연결을 완료한 뒤 실제 runtime과 provider를 시작한다. 최종 결과는 타입이 지정된 callback client로 보내고 `callSessionId` 기준 중복 결과를 안전하게 처리한다.
 
 - [ ] **단계 4: API 테스트 실행 및 통과 확인**
 
@@ -269,7 +269,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 예상 결과: 통과한다.
 
-### 작업 7: WebRTC 시그널링과 미디어 생명주기 구현
+### 작업 7: WebSocket 시그널링과 WebRTC 미디어 생명주기 구현
 
 **파일:**
 - 생성: `src/oncue_voice/api/signaling.py`
@@ -279,14 +279,17 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 - 생성: `tests/integration/test_webrtc_signaling.py`
 
 **인터페이스:**
-- `POST /v1/sessions/{session_id}/webrtc/offer`
-- `SdpOffer`와 `SdpAnswer`는 WebRTC SDP 문자열을 `sdp` 필드로 가진다.
+- `WebSocket /v1/signaling/call-sessions/{callSessionId}`
+- `SdpOffer`와 `SdpAnswer`는 WebRTC 연결 방법을 설명하는 SDP 문자열을 `sdp` 필드로 가진다.
+- `IceCandidate`는 `candidate`, `sdpMid`, `sdpMLineIndex`를 가진다.
 - `WebRtcSession#accept_offer(offer: SdpOffer): SdpAnswer`
-- `WebRtcSession#close(reason: str): None`
+- `WebRtcSession#close(): None`
+
+> 읽기 메모: SDP는 실제 음성이 아니라 연결 설명서다. ICE candidate는 가능한 네트워크 경로 후보이며, 이 정보들을 WebSocket으로 교환한 뒤 실제 음성은 WebRTC로 전달한다.
 
 - [ ] **단계 1: 시그널링 테스트 작성**
 
-유효한 연결 토큰, 잘못된 토큰, 모르는 세션, 잘못된 SDP, offer 수락, 종료 동작을 테스트한다. 단위 테스트에서는 fake peer connection을 사용한다.
+유효한 연결 토큰, 잘못된 토큰, 모르는 세션, 잘못된 SDP, offer 수락, ICE candidate 교환, 종료 동작을 테스트한다. 단위 테스트에서는 fake peer connection을 사용한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
@@ -296,7 +299,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 - [ ] **단계 3: aiortc 시그널링과 음성 track 구현**
 
-offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다.
+offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링에만 사용하고 오디오는 WebRTC media track으로 전달한다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
@@ -318,7 +321,7 @@ offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE �
 
 - [ ] **단계 1: 세션부터 오디오까지 통합 테스트 작성**
 
-fake provider로 세션을 만들고 offer를 인증하며 테스트 오디오 track을 교환한다. 출력 track과 최종 상태 callback을 확인하고 운영 저장소에 오디오가 저장되지 않는지 검증한다.
+fake provider로 세션을 만들고 offer를 인증하며 테스트 오디오 track을 교환한다. 출력 track과 최종 결과 callback을 확인하고 운영 저장소에 오디오가 저장되지 않는지 검증한다.
 
 - [ ] **단계 2: 통합 테스트 실행 및 실패 확인**
 

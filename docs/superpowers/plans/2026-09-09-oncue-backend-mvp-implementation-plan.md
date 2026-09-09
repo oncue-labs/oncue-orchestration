@@ -18,6 +18,8 @@
 - API 시간은 ISO-8601 UTC를 사용하고 JSON 생성 시각 속성은 `createdAt`으로 통일한다. DB의 `created_at`은 Java의 `createdAt`으로 매핑한다.
 - 통화 음성과 대화 텍스트를 저장하지 않는다.
 - 통화 5분 전 수정·취소 마감, 1회 시도, 60초 수신 대기, 최대 5분 통화 시간을 적용한다.
+- 통화 준비 시각은 `scheduledAtUtc - 3분`이며, 준비 worker는 1분마다 due 상태인 미준비 예약만 확인한다. 준비된 보이스 세션은 실제 음성 provider 연결을 유지하지 않는다.
+- 보이스 서버의 연결 제한시간은 30초이며, 백엔드 상태 보정 작업은 하루 1회 실행한다.
 - 결정적 안전 규칙을 먼저 실행하고, 위험 신호가 있을 때만 안전성 판정 LLM을 호출하며, 판정 실패·불확실 시 차단한다.
 - 스키마는 Flyway가 소유하고 JPA는 `ddl-auto: validate`로 동작한다.
 - 반복 예약, 관리자 API, Android API, 사용자 페르소나 생성, 동적 음성 설정은 추가하지 않는다.
@@ -256,11 +258,11 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 - `VoiceServerClient#createSession(CreateVoiceSessionRequest): VoiceSessionResponse`
 - `VoiceServerClient#sendTermination(String voiceSessionId): void`
 - `CallSessionService#prepare(ReservationId): CallSession`
-- `CallSessionService#applyEvent(SessionEvent): void`
+- `CallSessionService#applyResult(CallResult): void`
 
 - [ ] **단계 1: 상태 전이 테스트 작성**
 
-`PREPARING → RINGING → CONNECTING → IN_CALL → ENDED`, `RINGING → MISSED`, `CONNECTING → FAILED`, 중복 이벤트와 종료 상태 이후 이벤트를 테스트한다.
+`PREPARING → RINGING → CONNECTING → IN_CALL`, 각 단계의 `SUCCEEDED`·`FAILED` 결과, 중복 결과와 종료 결과 이후 결과를 테스트한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
@@ -270,11 +272,11 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 - [ ] **단계 3: 통화 세션 모델과 전이 구현**
 
-예약 하나당 세션 하나만 만들고 `callStatus`, `callOutcome`, `callEndReason`, 시간, 외부 `voiceSessionId`를 저장한다. 음성·대화 텍스트는 저장하지 않는다.
+예약 하나당 세션 하나만 만들고 `callStatus`, `callOutcome`, 시간, 외부 `voiceSessionId`를 저장한다. 통화 종료 뒤에도 `callStatus`는 마지막 진행 단계를 유지한다. 음성·대화 텍스트는 저장하지 않는다.
 
 - [ ] **단계 4: 스케줄러와 보이스 서버 client 구현**
 
-준비 시각에 예약을 조회하고, 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 세션을 생성한다. 정책과 필요한 세션 정보만 보낸다.
+`prepareAt = scheduledAtUtc - 3분`을 계산한다. 준비 worker는 1분마다 `prepareAt`이 지났고 아직 통화 세션이 없는 예약만 조회한다. 트랜잭션과 예약별 중복 방지 조건으로 한 예약이 두 번 준비되지 않게 한다. 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 서버에 가벼운 보이스 세션과 정책 스냅샷만 보낸다. 이 단계에서는 실제 WebRTC·STT·LLM·TTS 연결을 열지 않는다. 예약 시각에 별도로 VoIP Push를 전송한다.
 
 - [ ] **단계 5: 테스트 실행 및 통과 확인**
 
@@ -282,41 +284,45 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 예상 결과: 통과한다.
 
-### 작업 7: 연결 토큰과 보이스 상태 이벤트 구현
+### 작업 7: 연결 토큰과 보이스 통화 결과 구현
 
 **파일:**
 - 생성: `src/main/java/com/oncue/call/controller/CallSessionController.java`
 - 생성: `src/main/java/com/oncue/call/controller/response/ConnectionTokenResponse.java`
 - 생성: `src/main/java/com/oncue/call/service/ConnectionTokenService.java`
-- 생성: `src/main/java/com/oncue/call/voice_server/VoiceStatusEventRequest.java`
+- 생성: `src/main/java/com/oncue/call/voice_server/VoiceCallResultRequest.java`
 - 생성: `src/main/java/com/oncue/call/controller/InternalCallSessionController.java`
 - 생성: `src/main/java/com/oncue/common/security/ServiceTokenValidator.java`
 - 테스트: `src/test/java/com/oncue/call/ConnectionTokenServiceTest.java`
 - 테스트: `src/test/java/com/oncue/call/InternalCallSessionControllerTest.java`
 
 **인터페이스:**
-- `ConnectionTokenService#issue(UserId, SessionId): ConnectionTokenResponse`
-- `CallSessionService#applyEvent(SessionEvent): void`
+- `ConnectionTokenService#issue(UserId, CallSessionId): ConnectionTokenResponse`
+- `CallSessionService#applyResult(CallResult): void`
 
-- [ ] **단계 1: 토큰·이벤트 테스트 작성**
+- [ ] **단계 1: 토큰·결과 테스트 작성**
 
-소유자만 토큰을 발급받는지, 만료·종료 세션을 거부하는지, 토큰의 `sessionId`, `userId`, `jti`, `exp`, 서비스 토큰 인증, 중복 이벤트 ID를 테스트한다.
+소유자만 토큰을 발급받는지, 만료·종료 세션을 거부하는지, 토큰의 `callSessionId`, `userId`, `scope`, `jti`, `iat`, `exp`, 서비스 토큰 인증, 중복 결과 처리를 테스트한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
 실행: `./gradlew test --tests com.oncue.call.ConnectionTokenServiceTest --tests com.oncue.call.InternalCallSessionControllerTest`
 
-예상 결과: 토큰과 내부 이벤트 코드가 없으므로 실패한다.
+예상 결과: 토큰과 내부 결과 코드가 없으므로 실패한다.
 
 - [ ] **단계 3: 서명된 연결 토큰 구현**
 
 백엔드 개인키로 짧은 만료 시간의 토큰을 서명한다. voice URL, 토큰, `createdAt`, `expiresAt`, 임시 ICE 서버 자격 정보를 반환한다. 모바일 access token은 보이스 서버 요청에 넣지 않는다.
 
-- [ ] **단계 4: 내부 상태 이벤트 처리 구현**
+- [ ] **단계 4: 내부 통화 결과 처리 구현**
 
-보이스 서버를 별도로 인증하고, 합법적인 상태 전이를 확인하며, 같은 `eventId`는 상태를 중복 변경하지 않고 이미 접수된 것으로 처리한다.
+보이스 서버를 별도로 인증하고, `callSessionId` 기준으로 결과를 반영한다. 같은 결과는 상태를 중복 변경하지 않고 이미 접수된 것으로 처리하며, 다른 결과가 늦게 오면 상태를 바꾸지 않고 로그에 남긴다.
 
-- [ ] **단계 5: 테스트 실행 및 통과 확인**
+- [ ] **단계 5: 하루 1회 상태 보정 작업 구현**
+
+`callOutcome`이 비어 있고 예상 종료 시간이 지난 세션을 조회한다. 마지막 `callStatus`가 `PREPARING`, `RINGING` 또는 `CONNECTING`이면 `FAILED`, `IN_CALL`이면 `SUCCEEDED`로 보정한다. 보정 작업은 통화 재시도가 아니라 누락된 최종 결과를 정리하는 작업이다.
+
+- [ ] **단계 6: 테스트 실행 및 통과 확인**
 
 실행: `./gradlew test --tests com.oncue.call.ConnectionTokenServiceTest --tests com.oncue.call.InternalCallSessionControllerTest`
 
@@ -335,7 +341,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 - [ ] **단계 1: 백엔드 전체 흐름 통합 테스트 작성**
 
-MySQL과 Redis Testcontainers를 사용한다. 사용자 생성, key를 이용한 안전한 예약, 통화 세션 준비, 연결 토큰 발급, `IN_CALL`·`ENDED` 이벤트를 수행하고 저장된 상태를 검증한다.
+MySQL과 Redis Testcontainers를 사용한다. 사용자 생성, key를 이용한 안전한 예약, 통화 세션 준비, 연결 토큰 발급, `IN_CALL` 상태의 최종 결과 전달을 수행하고 저장된 상태를 검증한다.
 
 - [ ] **단계 2: 통합 테스트 실행 및 실패 확인**
 

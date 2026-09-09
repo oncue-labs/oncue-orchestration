@@ -16,7 +16,7 @@
 - 하드코딩된 MVP 통화 카드에는 DB 숫자 ID가 아니라 `personaKey`와 `scenarioKey`를 사용한다.
 - 네 개의 MVP 선택 카드와 로컬 이미지·음성 미리듣기 asset을 사용하며, 관리자 편집 화면과 동적 음성 설정은 만들지 않는다.
 - iOS 수신 전화 경험은 CallKit과 PushKit을 사용한다.
-- 음성은 WebRTC로 전달하고 백엔드를 거치지 않는다.
+- 음성은 WebRTC로 전달하고 백엔드를 거치지 않는다. WebSocket은 WebRTC 시그널링에만 사용한다.
 - 백엔드 API에는 사용자 access token을, 보이스 시그널링에는 1회성 연결 토큰을 사용한다.
 - 시나리오 컨텍스트 placeholder 하나와 통화 목표 placeholder 하나만 표시한다.
 - 예약 시각은 정확한 보장이 아니라 예상 시각으로 표시한다.
@@ -166,7 +166,7 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 
 - [ ] **단계 4: 목록·수정·취소 흐름 구현**
 
-백엔드가 5분 전 마감을 보고하면 수정·취소를 비활성화하고, `reservationStatus`, `callStatus`, `callOutcome`, `callEndReason`을 서로 구분해 표시한다.
+백엔드가 5분 전 마감을 보고하면 수정·취소를 비활성화하고, `reservationStatus`, `callStatus`, `callOutcome`을 서로 구분해 표시한다. `callOutcome`이 비어 있으면 통화 진행 중이고, 값이 있으면 종료된 것으로 표시한다.
 
 - [ ] **단계 5: 테스트 실행 및 통과 확인**
 
@@ -223,13 +223,13 @@ opaque session ID를 Dart로 내보낸다. 사용자가 응답하기 전에는 �
 - 테스트: `test/call/data/webrtc_client_test.dart`
 
 **인터페이스:**
-- `CallSessionApiClient.issueConnectionToken(String sessionId): Future<ConnectionToken>`
-- `WebRtcClient.connect(ConnectionToken token): Future<void>`
+- `CallSessionApiClient.issueConnectionToken(String callSessionId): Future<ConnectionToken>`
+- `WebRtcClient.connect(ConnectionToken token): Future<void>`는 token의 `signalingUrl`과 `iceServers`를 사용해 WebSocket 시그널링 후 WebRTC 음성 연결을 시작한다.
 - `WebRtcClient.close(String reason): Future<void>`
 
 - [ ] **단계 1: 연결 흐름 테스트 작성**
 
-answer → token 요청 → token 만료 → signaling offer → answer → connected 상태, 잘못된 token, WebRTC 실패를 테스트한다.
+answer → token 요청 → token 만료 → WebSocket signaling offer → answer/ICE candidate 교환 → WebRTC connected 상태, 잘못된 token, WebRTC 실패를 테스트한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
@@ -239,7 +239,7 @@ answer → token 요청 → token 만료 → signaling offer → answer → conn
 
 - [ ] **단계 3: token 조회와 ICE 설정 구현**
 
-token 요청에는 백엔드 access token만 사용한다. 반환된 1회성 연결 token과 STUN/TURN 설정을 `flutter_webrtc` signaling에 전달한다.
+token 요청에는 백엔드 access token만 사용한다. 반환된 1회성 연결 token, `signalingUrl`, STUN/TURN 설정을 `flutter_webrtc`와 WebSocket signaling에 전달한다. WebSocket으로 음성 데이터를 전송하지 않는다.
 
 - [ ] **단계 4: 통화 화면 구현**
 
@@ -263,7 +263,7 @@ token 요청에는 백엔드 access token만 사용한다. 반환된 1회성 연
 
 **인터페이스:**
 - `CallStateController#apply(CallEvent): CallState`
-- `CallState`는 `callStatus`, `callOutcome`, `callEndReason`을 별도로 제공한다.
+- `CallState`는 `callStatus`와 `callOutcome`을 제공한다. 통화 종료 뒤에도 `callStatus`에는 마지막 진행 단계를 유지한다.
 
 - [ ] **단계 1: 상태 controller 테스트 작성**
 

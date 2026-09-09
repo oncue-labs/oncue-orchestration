@@ -24,7 +24,7 @@
 
 ### 백엔드 → 보이스 서버
 
-서비스 간 인증 토큰을 사용한다. 보이스 서버는 백엔드가 보낸 요청인지 확인한 뒤 세션 생성과 상태 이벤트를 처리한다.
+서비스 간 인증 토큰을 사용한다. 보이스 서버는 백엔드가 보낸 요청인지 확인한 뒤 세션 생성과 통화 결과 전달을 처리한다.
 
 ### 모바일 → 보이스 서버
 
@@ -108,47 +108,108 @@ POST /api/v1/reservations/{reservationId}/cancel
 
 예약은 달력상의 약속이고, 통화 세션은 실제로 한 번 시도한 전화다. 예약 하나에는 통화 세션 하나만 생성한다.
 
+### 세션 준비 시점
+
+통화 세션은 예약 생성 즉시 만들지 않는다. 백엔드는 `prepareAt = scheduledAtUtc - 3분`으로 계산하고, 통화 준비 worker가 1분마다 `prepareAt`이 지났으며 아직 통화 세션이 없는 예약만 조회해 한 번 처리한다. 이 조회는 외부 LLM 호출이나 음성 연결을 시작하는 작업이 아니다.
+
+통화 준비 단계에서는 정책 스냅샷과 보이스 서버의 가벼운 세션 정보만 만든다. 보이스 서버는 실제 STT·LLM·TTS provider 연결과 WebRTC 미디어 처리를 사용자가 전화를 받은 뒤 시작한다. 따라서 통화 준비 후 예정 시각까지 실제 음성 연결을 계속 유지하지 않는다.
+
+예약 생성·목록·상세 응답에서 아직 준비 시각에 도달하지 않았다면 `callSessionId`가 없을 수 있다. 세션이 준비된 뒤에는 통화 세션의 `callSessionId`를 조회할 수 있지만, `voiceSessionId`는 모바일에 노출하지 않는다.
+
 ### 백엔드 → 보이스 서버: 세션 준비
 
 ```text
 POST /internal/v1/voice-sessions
 ```
 
-백엔드는 페르소나·시나리오 기본 지시사항, 대화 규칙, 공통 안전 정책, 사용자 컨텍스트와 목표를 조합한 대화 정책을 전달한다.
+백엔드는 페르소나·시나리오 기본 지시사항, 대화 규칙, 공통 안전 정책, 사용자 컨텍스트와 목표를 조합한 최종 `policySnapshot`을 전달한다. 보이스 서버는 이 스냅샷을 provider별 실행 형식으로 변환한다.
+
+응답은 동기적으로 반환한다.
+
+```json
+{
+  "callSessionId": 12345,
+  "voiceSessionId": "voice-session-abc",
+  "createdAt": "2026-09-08T12:00:00Z"
+}
+```
+
+> 읽기 메모: `callSessionId`는 온큐 전체의 통화 ID이고 `voiceSessionId`는 보이스 서버 내부 실행 ID다. 모바일에는 `voiceSessionId`를 노출하지 않는다.
 
 ### 모바일 → 백엔드: 연결 토큰 발급
 
 ```text
-POST /api/v1/call-sessions/{sessionId}/connection-token
+POST /api/v1/call-sessions/{callSessionId}/connection-token
 ```
 
-백엔드는 세션과 사용자 소유권을 확인한 뒤 1회성 연결 토큰과 WebRTC 연결에 필요한 STUN/TURN 정보를 반환한다.
+백엔드는 세션과 사용자 소유권을 확인한 뒤 1회성 연결 토큰, 보이스 WebSocket 주소와 WebRTC 연결에 필요한 STUN/TURN 정보를 반환한다.
 
-### 모바일 → 보이스 서버: WebRTC 시그널링
-
-```text
-POST /v1/sessions/{sessionId}/webrtc/offer
+```json
+{
+  "connectionToken": "실제 서명된 JWT 문자열",
+  "signalingUrl": "wss://voice.oncue.example/v1/signaling/call-sessions/12345",
+  "iceServers": [
+    { "urls": ["stun:stun.example.com"] },
+    {
+      "urls": ["turns:turn.example.com"],
+      "username": "temporary-user",
+      "credential": "temporary-credential"
+    }
+  ],
+  "expiresAt": "2026-09-08T12:01:00Z",
+  "createdAt": "2026-09-08T12:00:00Z"
+}
 ```
 
-요청에는 연결 토큰과 WebRTC `offer`가 포함된다. 보이스 서버는 토큰을 검증한 뒤 `answer`를 반환한다. 이 과정 이후 실제 음성은 모바일과 보이스 서버 사이에서 WebRTC로 전달된다.
+연결 토큰의 핵심 claim은 `callSessionId`, `userId`, `scope`, `jti`, `iat`, `exp`다. `scope`는 현재 `voice:connect` 하나만 허용한다. `jti`는 1회 사용 확인, `iat`는 발급 시각, `exp`는 만료 시각이다.
 
-### 보이스 서버 → 백엔드: 상태 이벤트
+### 모바일 ↔ 보이스 서버: WebRTC 시그널링
 
 ```text
-POST /internal/v1/call-sessions/{sessionId}/events
+wss://voice.oncue.example/v1/signaling/call-sessions/{callSessionId}
+```
+
+WebSocket 연결 시 `Authorization: Bearer {connectionToken}`을 사용한다. 모바일이 `offer`를 보내면 보이스 서버가 `answer`를 반환하고, 양쪽이 `ICE candidate`를 교환한다. 이 과정 이후 실제 음성은 모바일과 보이스 서버 사이에서 WebRTC로 전달된다.
+
+`offer`와 `answer`의 `sdp`는 연결 방법을 설명하는 텍스트이며 실제 음성이 아니다. 여기서 음성 방식은 음성 압축 형식(`Opus`, `PCMU`), 보내기·받기 방향, 품질 설정, 암호화·네트워크 정보를 뜻한다. `ICE candidate`는 연결에 사용할 수 있는 네트워크 후보 주소다. `sdpMid`는 후보가 속한 미디어 채널(음성·영상·데이터)을 가리키고, `sdpMLineIndex`는 SDP의 `m=` 미디어 설명 줄 순서이며 candidate 배열 순서가 아니다.
+
+```json
+{
+  "type": "offer",
+  "payload": { "sdp": "v=0..." }
+}
+```
+
+```json
+{
+  "type": "ice-candidate",
+  "payload": {
+    "candidate": "candidate:...",
+    "sdpMid": "0",
+    "sdpMLineIndex": 0
+  }
+}
+```
+
+### 보이스 서버 → 백엔드: 통화 결과
+
+```text
+POST /internal/v1/call-sessions/{callSessionId}/result
 ```
 
 요청:
 
 ```json
 {
-  "eventId": "event-123",
+  "voiceSessionId": "voice-session-abc",
   "callStatus": "IN_CALL",
-  "createdAt": "2026-09-08T12:01:10Z"
+  "callOutcome": "SUCCEEDED",
+  "startedAt": "2026-09-08T12:01:10Z",
+  "endedAt": "2026-09-08T12:06:10Z"
 }
 ```
 
-`eventId`를 이용해 중복 이벤트를 한 번만 처리한다.
+`callSessionId`를 기준으로 최종 결과를 한 번만 반영한다. 같은 결과가 다시 오면 현재 값을 유지하고 성공 응답하며, 이미 종료된 세션에 다른 결과가 오면 상태를 바꾸지 않고 로그에 기록한다.
 
 ## 6. 상태 모델
 
@@ -161,45 +222,43 @@ SCHEDULED → CLOSED
 
 `CLOSED`는 예약 작업이 끝났다는 뜻이며, 통화 성공을 의미하지 않는다.
 
-### 통화 상태
+### 통화 상태와 결과
 
 ```text
-PREPARING → RINGING ─────→ CONNECTING → IN_CALL → ENDED
-             └→ MISSED       └→ FAILED
+PREPARING → RINGING → CONNECTING → IN_CALL
 ```
 
-통화 결과와 종료 이유는 별도 속성으로 관리한다.
+`callStatus`는 현재 또는 종료 직전의 마지막 진행 단계이고, `callOutcome`은 종료 여부와 결과다.
 
 ```json
 {
-  "callStatus": "ENDED",
-  "callOutcome": "SUCCEEDED",
-  "callEndReason": "USER_ENDED"
+  "callStatus": "RINGING",
+  "callOutcome": "FAILED"
 }
 ```
 
-가능한 결과와 종료 이유는 다음과 같다.
+가능한 상태와 결과는 다음과 같다.
 
 ```text
 callOutcome:
 - SUCCEEDED
-- MISSED
 - FAILED
-- SAFETY_BLOCKED
 
-callEndReason:
-- USER_ENDED
-- TIME_LIMIT_REACHED
-- RING_TIMEOUT
-- TECHNICAL_ERROR
+callStatus:
+- PREPARING
+- RINGING
+- CONNECTING
+- IN_CALL
 ```
 
 ### 상태 처리 규칙
 
 - 상태는 이전 단계로 돌아가지 않는다.
-- `MISSED`, `FAILED`, `ENDED` 이후 재시도하지 않는다.
-- 종료 상태 이후 도착한 이전 상태 이벤트는 무시한다.
+- `callOutcome`이 설정된 뒤에는 재시도하지 않는다.
+- 통화 종료 뒤 도착한 이전 결과는 무시한다.
 - 백엔드가 최종 상태를 관리한다.
+- 보이스 서버는 `RINGING` 60초, `CONNECTING` 30초, `IN_CALL` 300초 제한을 적용한다.
+- 백엔드는 하루 1회 `callOutcome`이 비어 있고 예상 종료 시간이 지난 세션을 보정한다.
 
 ## 7. 대화 정책 조합
 
@@ -280,7 +339,7 @@ reservations:
 
 call_sessions:
 - id, reservation_id, voice_session_id
-- call_status, call_outcome, call_end_reason
+- call_status, call_outcome
 - started_at, ended_at, created_at, updated_at
 ```
 

@@ -65,7 +65,7 @@
 
 **인터페이스:**
 - backend는 `mysql:3306`, `redis:6379`, Compose service hostname으로 voice에 접근한다.
-- voice는 backend service hostname을 통해 backend로 상태 callback을 보낸다.
+- voice는 backend service hostname을 통해 backend로 최종 결과 callback을 보낸다.
 
 - [ ] **단계 1: build context와 의존성 조건 추가**
 
