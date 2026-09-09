@@ -16,6 +16,8 @@
 - 이 저장소에 `docker/turn`이나 TURN Dockerfile을 만들지 않는다.
 - backend는 `../../oncue-backend`에서 build하고 voice service는 `../../oncue-voice`에서 build한다.
 - Flutter는 Xcode를 통해 호스트에서 실행하며 iOS 개발 환경을 containerize하지 않는다.
+- `oncue-voice`의 Jupyter 품질 평가는 voice 저장소의 Poetry 환경에서 실행하며 Compose service로 만들지 않는다.
+- `oncue-voice/notebooks/artifacts/`는 Compose volume으로 mount하지 않고 각 개발자의 로컬 평가 결과로만 유지한다.
 - Public LLM을 기본값으로 사용하고 Local LLM은 선택적으로 켜는 Compose profile로 둔다. 일반 개발에는 Local LLM이 필요하지 않다.
 - API key, OAuth secret, TURN password, JWT private key, provider credential을 커밋하지 않는다.
 - MySQL과 Redis 데이터는 이름이 있는 local volume에 보관한다.
@@ -168,8 +170,17 @@ docker compose --env-file .env.example -f docker-compose.local.yml --profile loc
 
 또한 iOS는 Xcode에서 실행한다는 점과 production TURN credential에는 예시 값을 사용하면 안 된다는 점을 문서화한다.
 
+`oncue-voice`의 개발용 품질 평가는 다음처럼 별도로 실행한다고 문서화한다.
+
+```bash
+cd ../../oncue-voice
+poetry run jupyter lab notebooks/voice_persona_scenario_evaluation.ipynb
+```
+
+이 notebook은 실제 Public provider를 호출할 수 있으므로 API key는 환경 변수에서만 읽고 결과 artifact는 Git이나 Compose volume에 포함하지 않는다.
+
 - [ ] **단계 4: 전체 로컬 검증 실행**
 
-실행: `bash tests/compose_config_test.sh`, `bash tests/compose_profile_test.sh`, `bash tests/integration/compose_smoke_test.sh`
+실행: `bash tests/compose_config_test.sh`, `bash tests/compose_profile_test.sh`, `bash tests/integration/compose_smoke_test.sh` 및 `cd ../../oncue-voice && poetry run pytest tests/evaluation/test_evaluation_notebook.py -q`
 
 예상 결과: backend와 voice 계획에서 Dockerfile과 health endpoint를 제공하면 통과한다.

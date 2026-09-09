@@ -163,6 +163,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 - `PersonaRepository#findActiveByKey(String): Optional<Persona>`
 - `ScenarioRepository#findActiveByKey(String): Optional<Scenario>`
 - `DialoguePolicyService#build(Persona, Scenario, String scenarioContext, String callGoal, Locale): DialoguePolicy`
+- `DialoguePolicy`는 보이스 서비스 계약의 `role`, `stages`, `goal`, `allowedTopics`, `forbiddenTopics`, `terminationConditions`, `language`, `voiceId`, `instructions`, `dialogueRules`, `scenarioContext`, `voiceSettings`를 제공한다.
 
 - [ ] **단계 1: 정책 조합 테스트 작성**
 
@@ -176,7 +177,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 - [ ] **단계 3: 구조화된 정책 모델과 병합 규칙 구현**
 
-우선순위는 `공통 안전 정책 > 시나리오 규칙 > 페르소나 규칙 > 사용자 컨텍스트·목표`로 한다. 지시사항이나 규칙이 없으면 기본 정책을 사용한다. 정책 조합을 위해 별도 LLM 호출을 하지 않는다.
+우선순위는 `공통 안전 정책 > 시나리오 규칙 > 페르소나 규칙 > 사용자 컨텍스트·목표`로 한다. 지시사항이나 규칙이 없으면 기본 정책을 사용한다. 정책 조합을 위해 별도 LLM 호출을 하지 않는다. backend가 voice server에 전달하는 정책은 voice 계획의 `DialoguePolicy` 구조와 같은 JSON 필드명을 사용하며, notebook의 `policySnapshot`은 이 최종 정책을 그대로 기록한다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 

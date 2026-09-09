@@ -21,6 +21,8 @@ MVP에는 다음 네 가지 통화 조합을 제공한다.
 
 각 통화 조합은 페르소나 이미지와 약 10초 길이의 사전 등록 음성 미리듣기를 제공한다. 이미지와 음성 파일은 정적 콘텐츠로 등록하며 MVP에서 동적 voice 생성이나 voice 설정은 제공하지 않는다.
 
+통화 기능을 구현하기 전에 `oncue-voice`의 Public STT·LLM·TTS provider와 provider adapter를 이용해 음성·대화 품질을 사전 검증한다. 이 검증은 개발용 Jupyter notebook에서 수행하며, 사용자에게 voice 설정 기능을 제공하는 것은 아니다.
+
 ### 사용자 입력
 
 사용자는 예약 시 다음을 자유로운 문장으로 입력한다.
@@ -80,21 +82,26 @@ Flutter 공통 계층에 로그인, 통화 조합, 예약, 통화 상태 화면�
 
 Python 기반의 범용 음성 세션, WebRTC 미디어, STT·LLM·TTS 연결과 외부 음성 서비스 provider를 담당한다. 백엔드가 전달한 대화 정책을 실행하되 페르소나·예약·사용자 데이터베이스에 직접 의존하지 않는다. 모델·음성 서비스별 포맷 변환은 보이스 모듈 내부에서 처리한다.
 
-백엔드와 보이스 사이에는 세션 생성·종료·상태 전달을 위한 제어 API를 둔다. 제어 API의 구체적인 REST/gRPC 선택은 구현 계획에서 확정한다. 모바일과 보이스 사이의 실제 음성 채널은 WebRTC를 사용한다.
+대화 runtime은 특정 provider SDK에 직접 의존하지 않고 provider 중립적인 `LlmProvider`, `SttProvider`, `TtsProvider` interface와 `ProviderFactory`를 사용한다. MVP에서는 하나의 Public provider 조합과 그 하위 모델·voice 설정을 먼저 검증하며, provider가 충분하지 않을 때만 같은 interface에 두 번째 Public provider adapter를 추가한다. v1.0.0 이후 Local provider를 연결할 수 있도록 확장 지점은 먼저 두지만, MVP에서 Local provider를 구현하거나 실행하지 않는다.
+
+`oncue-voice/notebooks/voice_persona_scenario_evaluation.ipynb`는 보이스 서비스의 실제 application factory, `ConversationRuntime`, provider adapter와 정책 model을 사용한다. notebook 안에 STT·LLM·TTS 구현이나 별도의 대화 처리 모듈을 만들지 않는다. 실행 당시 실제 runtime에 전달된 최종 대화 정책은 정책 스냅샷으로 로컬 평가 artifact에 저장한다.
+
+백엔드와 보이스 사이에는 REST 기반 세션 생성·종료·상태 전달 제어 API를 둔다. 모바일과 보이스 사이의 실제 음성 채널은 WebRTC를 사용한다.
 
 ### 통화 실행 흐름
 
-1. 모바일이 백엔드에 `personaKey`, `scenarioKey`, 컨텍스트, 목표, 현지 예약 시각을 전송한다.
-2. 백엔드가 페르소나·시나리오의 개별 존재·활성 상태와 예약 제약을 검증한다.
-3. 규칙 기반 안전 검사 후 위험 신호가 있을 때만 LLM 안전 판정을 실행한다.
-4. 안전 판정을 통과하면 예약을 저장한다.
-5. 예약 시각에 백엔드가 대화 정책과 보이스 세션을 준비한다.
-6. VoIP Push에는 전체 컨텍스트나 장기 자격 증명 대신 통화 식별자만 전달한다.
-7. 모바일은 수신한 통화를 CallKit에 보고한다.
-8. 사용자가 응답하면 모바일이 백엔드에 연결 권한을 요청한다.
-9. 백엔드는 권한을 검증하고 1회성 WebRTC 연결 토큰을 발급한다.
-10. 모바일과 보이스가 토큰을 검증한 뒤 직접 WebRTC로 연결한다.
-11. 보이스가 대화 정책에 따라 실시간 대화를 실행하고 상태 이벤트를 백엔드에 전달한다.
+1. `oncue-voice`가 provider adapter와 대화 runtime을 사용해 음성·대화 품질을 사전 검증한다.
+2. 모바일이 백엔드에 `personaKey`, `scenarioKey`, 컨텍스트, 목표, 현지 예약 시각을 전송한다.
+3. 백엔드가 페르소나·시나리오의 개별 존재·활성 상태와 예약 제약을 검증한다.
+4. 규칙 기반 안전 검사 후 위험 신호가 있을 때만 LLM 안전 판정을 실행한다.
+5. 안전 판정을 통과하면 예약을 저장한다.
+6. 예약 시각에 백엔드가 대화 정책과 보이스 세션을 준비한다.
+7. VoIP Push에는 전체 컨텍스트나 장기 자격 증명 대신 통화 식별자만 전달한다.
+8. 모바일은 수신한 통화를 CallKit에 보고한다.
+9. 사용자가 응답하면 모바일이 백엔드에 연결 권한을 요청한다.
+10. 백엔드는 권한을 검증하고 1회성 WebRTC 연결 토큰을 발급한다.
+11. 모바일과 보이스가 토큰을 검증한 뒤 직접 WebRTC로 연결한다.
+12. 보이스가 대화 정책에 따라 실시간 대화를 실행하고 상태 이벤트를 백엔드에 전달한다.
 
 ## 4. 안전 및 악용 방지
 
@@ -142,6 +149,9 @@ CANCELLED    FAILED      MISSED      FAILED   COMPLETED
 - 시나리오 정책, 최대 5분, 미응답 60초, 실패 무재시도가 동작한다.
 - 위험 예약은 규칙 검사와 선택적 LLM 판정을 거치며, 판정 실패 시 차단된다.
 - 음성과 대화 텍스트가 저장되지 않는다.
+- 통화 기능 구현 전에 하나의 Public provider 조합에 대해 음성·말투·시나리오 목표를 수동 평가할 수 있다.
+- provider adapter를 통해 같은 Public provider의 하위 모델·voice 설정을 A/B 비교할 수 있다.
+- 평가 실행의 정책 스냅샷과 합성 테스트 결과를 로컬 artifact로 다시 확인할 수 있다.
 - 보이스 서버가 백엔드 데이터베이스나 장기 자격 증명에 접근하지 않는다.
 
 ## 7. 후속 범위
@@ -153,6 +163,7 @@ v1.0.0 이후 다음을 계획한다.
 - 반복 예약
 - 안전 차단 Push 알림
 - 사용자 voice 설정 및 설정 기반 미리듣기 생성
+- provider가 충분하지 않을 때 두 번째 Public provider를 비교하기 위한 추가 adapter
 - Android 모바일 구현
 - 사용자가 직접 페르소나를 생성하는 기능
 
@@ -161,6 +172,8 @@ v1.0.0 이후 다음을 계획한다.
 - 백엔드·보이스 제어 API의 세부 REST 계약
 - WebRTC 시그널링·STUN/TURN 구성
 - STT·LLM·TTS Public 서비스와 provider 계약
+- provider 중립 interface·factory와 Public provider adapter
+- `oncue-voice`의 Jupyter 기반 음성·대화 품질 평가
 - Kakao·X OAuth 토큰 검증 방식
 - 정적 이미지·음성 파일 저장소와 CDN
 - 데이터베이스와 예약 실행 워커
