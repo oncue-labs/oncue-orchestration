@@ -4,7 +4,7 @@
 
 **목표:** 사용자가 제공된 통화 조합 카드를 선택하고 예약하며, 시스템과 비슷한 수신 전화 화면으로 전화를 받고, 인증된 WebRTC 대화를 시작할 수 있는 iOS 우선 Flutter 앱을 구축한다.
 
-**아키텍처:** Flutter UI, 애플리케이션 상태, API client는 플랫폼 공통으로 유지한다. PushKit과 CallKit은 iOS native adapter 뒤에 두고, 나중에 Android가 같은 통화 상태 계약을 구현할 수 있도록 플랫폼 인터페이스를 만든다.
+**아키텍처:** Flutter UI, 애플리케이션 상태, API client는 플랫폼 공통으로 유지한다. iOS CallKit과 Android system-managed Telecom은 `SystemCallManager` 플랫폼 adapter 뒤에 두고, 두 OS가 같은 통화 상태 계약을 구현하도록 한다. 백엔드·보이스 서버 통신과 WebRTC 연결은 별도의 `VoiceCallService`가 담당한다.
 
 **기술 스택:** Flutter stable, Dart, iOS Swift, CallKit, PushKit, `flutter_webrtc`, HTTPS REST, APNs VoIP Push, unit/widget/integration test.
 
@@ -15,11 +15,12 @@
 - iOS를 먼저 지원하고 Android는 나중에 같은 Dart 도메인 계약 뒤에 구현한다.
 - 하드코딩된 MVP 통화 카드에는 DB 숫자 ID가 아니라 `personaKey`와 `scenarioKey`를 사용한다.
 - 네 개의 MVP 선택 카드와 로컬 이미지·음성 미리듣기 asset을 사용하며, 관리자 편집 화면과 동적 음성 설정은 만들지 않는다.
-- iOS 수신 전화 경험은 CallKit과 PushKit을 사용한다.
+- iOS 수신 전화는 PushKit과 CallKit, Android 수신 전화는 FCM과 system-managed Telecom을 사용한다.
 - 음성은 WebRTC로 전달하고 백엔드를 거치지 않는다. WebSocket은 WebRTC 시그널링에만 사용한다.
 - 백엔드 API에는 사용자 access token을, 보이스 시그널링에는 1회성 연결 토큰을 사용한다.
 - 시나리오 컨텍스트 placeholder 하나와 통화 목표 placeholder 하나만 표시한다.
 - 예약 시각은 정확한 보장이 아니라 예상 시각으로 표시한다.
+- 예약 API를 호출하기 전에 플랫폼별 필수 통화 권한과 통화 기능 설정을 확인한다. 준비되지 않았으면 예약을 막고 권한 안내 화면으로 이동한다.
 - Android UI, 반복 예약, 임의 전화번호 수신자, 사용자 직접 페르소나 생성은 추가하지 않는다.
 
 ---
@@ -31,23 +32,27 @@
 - 생성: `/Users/yeonny0723/orca/oncue-mobile/lib/main.dart`
 - 생성: `/Users/yeonny0723/orca/oncue-mobile/lib/common/config/app_config.dart`
 - 생성: `/Users/yeonny0723/orca/oncue-mobile/lib/common/auth/auth_session.dart`
-- 생성: `/Users/yeonny0723/orca/oncue-mobile/lib/common/call/native_call_platform.dart`
-- 테스트: `/Users/yeonny0723/orca/oncue-mobile/test/common/call/native_call_platform_test.dart`
+- 생성: `/Users/yeonny0723/orca/oncue-mobile/lib/common/call/system_call_manager.dart`
+- 테스트: `/Users/yeonny0723/orca/oncue-mobile/test/common/call/system_call_manager_test.dart`
 - 생성: `/Users/yeonny0723/orca/oncue-mobile/ios/Runner/OnCueCallKitBridge.swift`
 
 **인터페이스:**
-- `NativeCallPlatform.reportIncomingCall(CallPresentation): Future<void>`
-- `NativeCallPlatform.endCall(String callId): Future<void>`
-- `NativeCallPlatform.onAnswer: Stream<String>`
-- `NativeCallPlatform.onEnd: Stream<String>`
+- `SystemCallManager.presentIncomingCall(IncomingCallDisplayInfo): Future<void>`
+- `SystemCallManager.endCall(String callSessionId): Future<void>`
+- `SystemCallManager.answerSucceeded(String callSessionId): Future<void>`
+- `SystemCallManager.answerFailed(String callSessionId): Future<void>`
+- `SystemCallManager.onAnswered: Stream<String>`
+- `SystemCallManager.onRejected: Stream<String>`
+- `SystemCallManager.onEnded: Stream<String>`
+- `IncomingCallDisplayInfo`는 `callSessionId`, `displayName`, `callType`을 가진다.
 
-- [ ] **단계 1: 플랫폼 계약 테스트 작성**
+- [ ] **단계 1: 시스템 통화 관리자 계약 테스트 작성**
 
-Dart interface에 answer/end stream이 있고 fake 구현을 widget test에 주입할 수 있는지 검증한다.
+Dart 공통 계약이 수신 전화를 OS에 등록하고, answer/reject/end 이벤트를 `callSessionId`와 함께 전달하며, 연결 성공·실패 결과를 OS에 반영하고, fake 구현을 widget test에 주입할 수 있는지 검증한다. 이 계약은 보이스 서버 통신을 포함하지 않는다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
-실행: `flutter test test/common/call/native_call_platform_test.dart`
+실행: `flutter test test/common/call/system_call_manager_test.dart`
 
 예상 결과: Flutter 프로젝트와 계약이 없으므로 실패한다.
 
@@ -57,7 +62,7 @@ Dart interface에 answer/end stream이 있고 fake 구현을 widget test에 주�
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
-실행: `flutter test test/common/call/native_call_platform_test.dart`
+실행: `flutter test test/common/call/system_call_manager_test.dart`
 
 예상 결과: 통과한다.
 
@@ -111,11 +116,11 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 
 **인터페이스:**
 - `MvpCallCombinations.all: List<CallCombinationCard>`
-- 각 카드는 `personaKey`, `scenarioKey`, 제목, 이미지 asset, 미리듣기 음성 asset, 입력 placeholder를 가진다.
+- 각 카드는 `personaKey`, `scenarioKey`, 페르소나 이름, 시나리오 요약·상세 설명, 이미지 asset, 미리듣기 음성 asset, 입력 placeholder를 가진다.
 
 - [ ] **단계 1: 네 개 통화 카드 widget test 작성**
 
-네 개 카드가 보이고, 각 카드가 persona key 하나와 scenario key 하나를 가지며, 상세 화면에 시나리오 컨텍스트 placeholder 하나와 통화 목표 placeholder 하나만 있는지 검증한다.
+네 개 카드가 보이고, 각 카드가 persona key 하나와 scenario key 하나를 가지며, 페르소나 이미지·이름·짧은 시나리오 요약을 표시하는지 검증한다. 긴 시나리오 요약은 카드 영역에서 말줄임표로 축약되는지 확인한다. 상세 화면에는 같은 이미지와 10초 미리듣기, 시나리오 설명, 시나리오 컨텍스트 placeholder 하나와 통화 목표 placeholder 하나가 있는지 검증한다.
 
 - [ ] **단계 2: widget test 실행 및 실패 확인**
 
@@ -123,9 +128,9 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 
 예상 결과: 카드 model과 화면이 없으므로 실패한다.
 
-- [ ] **단계 3: 정적 카드 정의와 asset 추가**
+- [ ] **단계 3: 카드·상세 화면과 정적 asset 추가**
 
-`santa`, `princess`, `friend`, `child-roleplay`, `go-home`, `travel-friend-introduction` 같은 안정적인 key를 사용한다. 이미지는 제품 소유자가 제공한 local asset으로 넣는다.
+`santa`, `princess`, `friend`, `child-roleplay`, `go-home`, `travel-friend-introduction` 같은 안정적인 key를 사용한다. 카드에는 페르소나 이미지·이름과 짧은 시나리오 요약을 표시하고, 요약이 영역을 넘으면 말줄임표로 처리한다. 카드 선택 시 상세 화면으로 이동해 같은 이미지, 10초 미리듣기, 전체 시나리오 설명, 시나리오 컨텍스트·통화 목표 입력과 예약 시각 선택을 제공한다. 이미지는 제품 소유자가 제공한 local asset으로 넣고, 미리듣기 음성은 조합별 정적 asset으로 등록한다.
 
 - [ ] **단계 4: widget test 실행 및 통과 확인**
 
@@ -141,6 +146,9 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 - 생성: `lib/reservation/application/reservation_service.dart`
 - 생성: `lib/reservation/presentation/reservation_form_page.dart`
 - 생성: `lib/reservation/presentation/reservation_list_page.dart`
+- 생성: `lib/reservation/presentation/reservation_detail_page.dart`
+- 생성: `lib/common/permissions/call_permission_service.dart`
+- 생성: `lib/common/permissions/permission_guide_page.dart`
 - 테스트: `test/reservation/application/reservation_service_test.dart`
 - 테스트: `test/reservation/presentation/reservation_form_page_test.dart`
 
@@ -148,11 +156,15 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 - `ReservationApiClient.create(CreateReservationRequest): Future<Reservation>`
 - `ReservationApiClient.update(String reservationId, UpdateReservationRequest): Future<Reservation>`
 - `ReservationApiClient.cancel(String reservationId): Future<Reservation>`
+- `ReservationService.edit(String reservationId, EditReservationInput): Future<Reservation>`
+- `CallPermissionService.checkRequiredPermissions(): Future<CallPermissionStatus>`
+- `CallPermissionService.requestMissingPermissions(): Future<CallPermissionStatus>`
+- `CallPermissionService.openSettings(): Future<void>`
 - `ReservationService.createFromCard(CallCombinationCard, String context, String goal, DateTime localTime, String timeZone): Future<Reservation>`
 
-- [ ] **단계 1: 요청 매핑과 form 규칙 테스트 작성**
+- [ ] **단계 1: 권한·요청 매핑과 form 규칙 테스트 작성**
 
-선택 카드가 `personaKey`와 `scenarioKey`로 매핑되는지, 현지 시각과 time zone이 전송되는지, placeholder가 한 번만 표시되는지, 백엔드 안전·마감 오류가 입력값을 지우지 않고 표시되는지 검증한다.
+필수 통화 권한이 없으면 예약 API를 호출하지 않고 안내 화면으로 이동하는지, 권한이 준비되면 선택 카드가 `personaKey`와 `scenarioKey`로 매핑되는지, 현지 시각과 time zone이 전송되는지, placeholder가 한 번만 표시되는지, 백엔드 안전·마감 오류가 입력값을 지우지 않고 표시되는지 검증한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
@@ -160,13 +172,13 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 
 예상 결과: 예약 코드가 없으므로 실패한다.
 
-- [ ] **단계 3: 타입이 지정된 예약 요청과 화면 구현**
+- [ ] **단계 3: 권한 안내와 타입이 지정된 예약 요청·화면 구현**
 
-기기 time zone과 locale을 사용한다. 예약 시각 근처에 예상 시각 안내를 표시한다. client에서 시나리오 적합성 LLM 검사를 실행하지 않는다.
+플랫폼 adapter가 권한 상태를 확인하고 누락된 권한 요청 또는 시스템 설정 이동을 제공한다. 필수 조건이 충족될 때만 예약 API를 호출한다. 기기 time zone과 locale을 사용하고, 예약 시각 근처에 예상 시각 안내를 표시한다. client에서 시나리오 적합성 LLM 검사를 실행하지 않는다.
 
-- [ ] **단계 4: 목록·수정·취소 흐름 구현**
+- [ ] **단계 4: 목록·상세·수정·취소 흐름 구현**
 
-백엔드가 5분 전 마감을 보고하면 수정·취소를 비활성화하고, `reservationStatus`, `callStatus`, `callOutcome`을 서로 구분해 표시한다. `callOutcome`이 비어 있으면 통화 진행 중이고, 값이 있으면 종료된 것으로 표시한다.
+예약 목록에서 상세 화면으로 이동하고, 상세 화면에서 수정 화면으로 이어지게 한다. 상세 화면에는 예약 상태, 통화 조합, 페르소나 이미지, 예약 시각·시간대, 예상 시각 안내, 시나리오 컨텍스트, 통화 목표, `editableUntil`, 통화 결과를 표시한다. 생성·수정은 같은 `ReservationFormPage`를 모드만 바꿔 재사용한다. 백엔드가 반환한 `editableUntil`이 지나면 수정 버튼을 비활성화하고 `통화 5분 전부터는 예약을 수정할 수 없습니다.`를 표시한다. 수정 중 마감 시간이 지나면 백엔드 오류를 표시하고 입력값은 유지한다. `reservationStatus`, `callStatus`, `callOutcome`을 서로 구분해 표시하며, `callOutcome`이 비어 있으면 통화 진행 중이고 값이 있으면 종료된 것으로 표시한다. `voiceSessionId`, 정책 스냅샷과 내부 오류 정보는 표시하지 않는다.
 
 - [ ] **단계 5: 테스트 실행 및 통과 확인**
 
@@ -186,11 +198,11 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 
 **인터페이스:**
 - `IncomingCallService.handleVoipPayload(Map<String, dynamic>): Future<void>`
-- Push payload에는 opaque `sessionId` 또는 통화 식별자만 넣고 컨텍스트, 목표, 장기 token은 넣지 않는다.
+- Push payload에는 `callSessionId`와 시스템 수신 화면에 표시할 안전한 `displayName`만 넣고 컨텍스트, 목표, 장기 token은 넣지 않는다.
 
 - [ ] **단계 1: 수신 전화 서비스 테스트 작성**
 
-정상 opaque payload, 잘못된 payload, 중복 Push, CallKit 보고 실패, answer callback, end callback을 테스트한다.
+정상 payload, 잘못된 payload, 중복 Push, 시스템 통화 등록 실패, answer/reject/end callback을 테스트한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
@@ -200,11 +212,11 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 
 - [ ] **단계 3: native PushKit 등록과 CallKit 보고 구현**
 
-VoIP push entitlement를 설정하고 device token을 등록한다. 수신 전화를 지체 없이 보고하며 선택된 페르소나가 보이는 이름과 일치시킨다.
+플랫폼별 수신 통화 push와 시스템 통화 등록을 연결한다. iOS는 VoIP push와 CallKit을 사용하고, Android는 FCM과 system-managed Telecom을 사용하도록 native adapter 경계를 둔다. 수신 전화를 지체 없이 등록하며 선택된 페르소나가 보이는 이름과 일치시킨다.
 
 - [ ] **단계 4: answer/end callback을 Dart로 전달**
 
-opaque session ID를 Dart로 내보낸다. 사용자가 응답하기 전에는 연결 token을 요청하지 않는다.
+`callSessionId`를 Dart로 내보낸다. 플랫폼 내부의 CallKit UUID나 Telecom 식별자는 공통 계층에 노출하지 않는다. 사용자가 응답하기 전에는 연결 token을 요청하지 않는다.
 
 - [ ] **단계 5: 테스트와 iOS simulator smoke check 실행**
 
@@ -216,30 +228,33 @@ opaque session ID를 Dart로 내보낸다. 사용자가 응답하기 전에는 �
 
 **파일:**
 - 생성: `lib/call/data/call_session_api_client.dart`
-- 생성: `lib/call/application/call_connection_service.dart`
+- 생성: `lib/call/application/voice_call_service.dart`
 - 생성: `lib/call/data/webrtc_client.dart`
 - 생성: `lib/call/presentation/in_call_page.dart`
-- 테스트: `test/call/application/call_connection_service_test.dart`
+- 테스트: `test/call/application/voice_call_service_test.dart`
 - 테스트: `test/call/data/webrtc_client_test.dart`
 
 **인터페이스:**
 - `CallSessionApiClient.issueConnectionToken(String callSessionId): Future<ConnectionToken>`
+- `CallSessionApiClient.reject(String callSessionId): Future<CallSession>`
+- `VoiceCallService.answer(String callSessionId): Future<void>`
+- `VoiceCallService.end(String callSessionId): Future<void>`
 - `WebRtcClient.connect(ConnectionToken token): Future<void>`는 token의 `signalingUrl`과 `iceServers`를 사용해 WebSocket 시그널링 후 WebRTC 음성 연결을 시작한다.
 - `WebRtcClient.close(String reason): Future<void>`
 
 - [ ] **단계 1: 연결 흐름 테스트 작성**
 
-answer → token 요청 → token 만료 → WebSocket signaling offer → answer/ICE candidate 교환 → WebRTC connected 상태, 잘못된 token, WebRTC 실패를 테스트한다.
+answer → token 요청 → token 만료 → WebSocket signaling offer → answer/ICE candidate 교환 → WebRTC connected 상태, 잘못된 token, WebRTC 실패를 테스트한다. reject → 거절 API 호출 → `RINGING + FAILED` 반영과 중복 거절도 테스트한다. in-call end → WebRTC·WebSocket 종료와 보이스 서버의 최종 결과 callback 대기를 테스트한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
-실행: `flutter test test/call/application/call_connection_service_test.dart test/call/data/webrtc_client_test.dart`
+실행: `flutter test test/call/application/voice_call_service_test.dart test/call/data/webrtc_client_test.dart`
 
 예상 결과: 연결과 WebRTC 코드가 없으므로 실패한다.
 
 - [ ] **단계 3: token 조회와 ICE 설정 구현**
 
-token 요청에는 백엔드 access token만 사용한다. 반환된 1회성 연결 token, `signalingUrl`, STUN/TURN 설정을 `flutter_webrtc`와 WebSocket signaling에 전달한다. WebSocket으로 음성 데이터를 전송하지 않는다.
+token 요청과 거절 요청에는 백엔드 access token만 사용한다. 통화 중 종료는 WebSocket으로 `hangup` 제어 메시지를 먼저 보낸 뒤 별도 백엔드 API 없이 WebRTC·WebSocket을 닫는 것으로 처리한다. 반환된 1회성 연결 token, `signalingUrl`, STUN/TURN 설정을 `flutter_webrtc`와 WebSocket signaling에 전달한다. WebSocket으로 음성 데이터를 전송하지 않는다.
 
 - [ ] **단계 4: 통화 화면 구현**
 
@@ -247,7 +262,7 @@ token 요청에는 백엔드 access token만 사용한다. 반환된 1회성 연
 
 - [ ] **단계 5: 테스트와 실제 기기 WebRTC 확인**
 
-실행: `flutter test test/call/application/call_connection_service_test.dart test/call/data/webrtc_client_test.dart` 및 TURN 설정이 있는 iPhone에서 테스트한다.
+실행: `flutter test test/call/application/voice_call_service_test.dart test/call/data/webrtc_client_test.dart` 및 TURN 설정이 있는 iPhone에서 테스트한다.
 
 예상 결과: 인증된 음성 연결이 `oncue-voice`에 연결된다.
 

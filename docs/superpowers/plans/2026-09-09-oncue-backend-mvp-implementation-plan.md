@@ -258,11 +258,13 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 - `VoiceServerClient#createSession(CreateVoiceSessionRequest): VoiceSessionResponse`
 - `VoiceServerClient#sendTermination(String voiceSessionId): void`
 - `CallSessionService#prepare(ReservationId): CallSession`
+- `CallSessionService#reject(UserId, CallSessionId): CallSession`
 - `CallSessionService#applyResult(CallResult): void`
 
 - [ ] **단계 1: 상태 전이 테스트 작성**
 
 `PREPARING → RINGING → CONNECTING → IN_CALL`, 각 단계의 `SUCCEEDED`·`FAILED` 결과, 중복 결과와 종료 결과 이후 결과를 테스트한다.
+수신 중인 세션을 사용자가 거절하면 보이스 세션 종료를 요청하고 `RINGING + FAILED`로 즉시 마감하는 동작도 테스트한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
@@ -276,7 +278,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 - [ ] **단계 4: 스케줄러와 보이스 서버 client 구현**
 
-`prepareAt = scheduledAtUtc - 3분`을 계산한다. 준비 worker는 1분마다 `prepareAt`이 지났고 아직 통화 세션이 없는 예약만 조회한다. 트랜잭션과 예약별 중복 방지 조건으로 한 예약이 두 번 준비되지 않게 한다. 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 서버에 가벼운 보이스 세션과 정책 스냅샷만 보낸다. 이 단계에서는 실제 WebRTC·STT·LLM·TTS 연결을 열지 않는다. 예약 시각에 별도로 VoIP Push를 전송한다.
+`prepareAt = scheduledAtUtc - 3분`을 계산한다. 준비 worker는 1분마다 `prepareAt`이 지났고 아직 통화 세션이 없는 예약만 조회한다. 트랜잭션과 예약별 중복 방지 조건으로 한 예약이 두 번 준비되지 않게 한다. 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 서버에 보이스 세션 준비 데이터와 정책 스냅샷을 보낸다. 이 단계에서는 실제 WebRTC·STT·LLM·TTS 연결을 열지 않는다. 예약 시각에 별도로 VoIP Push를 전송한다.
 
 - [ ] **단계 5: 테스트 실행 및 통과 확인**
 
@@ -316,7 +318,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 - [ ] **단계 4: 내부 통화 결과 처리 구현**
 
-보이스 서버를 별도로 인증하고, `callSessionId` 기준으로 결과를 반영한다. 같은 결과는 상태를 중복 변경하지 않고 이미 접수된 것으로 처리하며, 다른 결과가 늦게 오면 상태를 바꾸지 않고 로그에 남긴다.
+보이스 서버를 별도로 인증하고, 모바일 거절 요청에서 `voiceSessionId` 기준 종료 요청을 보낸다. 거절된 세션은 `RINGING + FAILED`로 즉시 반영한다. `callSessionId` 기준으로 도착한 최종 결과를 반영하며, 같은 결과는 상태를 중복 변경하지 않고 이미 접수된 것으로 처리하고, 다른 결과가 늦게 오면 상태를 바꾸지 않고 로그에 남긴다.
 
 - [ ] **단계 5: 하루 1회 상태 보정 작업 구현**
 

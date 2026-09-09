@@ -282,6 +282,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 - `WebSocket /v1/signaling/call-sessions/{callSessionId}`
 - `SdpOffer`와 `SdpAnswer`는 WebRTC 연결 방법을 설명하는 SDP 문자열을 `sdp` 필드로 가진다.
 - `IceCandidate`는 `candidate`, `sdpMid`, `sdpMLineIndex`를 가진다.
+- `HangupMessage`는 사용자가 정상 종료했음을 알리는 `{"type":"hangup"}` 제어 메시지다.
 - `WebRtcSession#accept_offer(offer: SdpOffer): SdpAnswer`
 - `WebRtcSession#close(): None`
 
@@ -289,7 +290,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 - [ ] **단계 1: 시그널링 테스트 작성**
 
-유효한 연결 토큰, 잘못된 토큰, 모르는 세션, 잘못된 SDP, offer 수락, ICE candidate 교환, 종료 동작을 테스트한다. 단위 테스트에서는 fake peer connection을 사용한다.
+유효한 연결 토큰, 잘못된 토큰, 모르는 세션, 잘못된 SDP, offer 수락, ICE candidate 교환, `hangup` 정상 종료와 비정상 연결 끊김을 테스트한다. 단위 테스트에서는 fake peer connection을 사용한다.
 
 - [ ] **단계 2: 테스트 실행 및 실패 확인**
 
@@ -299,7 +300,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 - [ ] **단계 3: aiortc 시그널링과 음성 track 구현**
 
-offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링에만 사용하고 오디오는 WebRTC media track으로 전달한다.
+offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
