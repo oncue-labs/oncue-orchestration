@@ -42,6 +42,7 @@
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/tts_provider.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/models.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/factory.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/.gitignore`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/test_health.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/providers/test_provider_factory.py`
 
@@ -55,21 +56,21 @@
 - `ProviderCapabilities`는 provider가 지원하는 모델·voice·음성 설정 목록을 표현한다.
 - 환경 변수 기반 설정과 `GET /health` endpoint를 제공하는 FastAPI 앱
 
-- [ ] **단계 1: factory와 health 실패 테스트 작성**
+- [x] **단계 1: factory와 health 실패 테스트 작성**
 
 지원 provider 설정이 `ProviderBundle`을 반환하고 지원하지 않는 provider·voice 옵션을 명시적으로 거부하는 테스트를 작성한다. health endpoint가 `{"status": "ok"}`를 반환하는 테스트도 작성한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
 실행: `poetry run pytest tests/unit/test_health.py tests/unit/providers/test_provider_factory.py -q`
 
 예상 결과: 패키지, factory, endpoint가 없으므로 실패한다.
 
-- [ ] **단계 3: provider protocol·설정 모델·factory 구현**
+- [x] **단계 3: provider protocol·설정 모델·factory 구현**
 
 provider별 SDK 타입이 밖으로 노출되지 않는 `ProviderSettings`, `ProviderCapabilities`, `ProviderBundle`을 만든다. `ProviderFactory`는 provider 이름과 설정을 받아 등록된 adapter를 선택하고, capability에 없는 설정은 조용히 무시하지 않고 오류로 반환한다. `pyproject.toml`에는 runtime 의존성과 Jupyter·`ipykernel`·`nbclient` 등 평가용 개발 의존성을 분리해 기록한다.
 
-- [ ] **단계 4: health와 factory 테스트 실행**
+- [x] **단계 4: health와 factory 테스트 실행**
 
 실행: `poetry run pytest tests/unit/test_health.py tests/unit/providers/test_provider_factory.py -q`
 
@@ -81,7 +82,6 @@ provider별 SDK 타입이 밖으로 노출되지 않는 `ProviderSettings`, `Pro
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_llm_provider.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_stt_provider.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_tts_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/policy.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/models.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/runtime.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/events.py`
@@ -93,64 +93,67 @@ provider별 SDK 타입이 밖으로 노출되지 않는 `ProviderSettings`, `Pro
 - `UserTurn`은 `text`, `createdAt`을 가진다. `AssistantChunk`는 `text`, `sequence`를 가진다. `TranscriptSegment`는 `text`, `isFinal`, `startMs`, `endMs`를 가진다.
 - `ConversationRuntime#run(session_id: str, policy: DialoguePolicy, audio: AsyncIterator[bytes]): AsyncIterator[bytes]`
 - `ConversationRuntime#stop(session_id: str, reason: str): None`
+- `ConversationRuntimeOptions`는 clock, 최대 통화 시간, 이벤트 sink를 주입한다.
+- `ConversationEvent`는 사용자 발화와 assistant chunk를 관찰하기 위한 내부 이벤트다.
 
-- [ ] **단계 1: provider contract와 runtime 실패 테스트 작성**
+- [x] **단계 1: provider contract와 runtime 실패 테스트 작성**
 
 순서가 보장된 chunk, 취소, provider timeout, provider 오류 전달을 테스트한다. STT→LLM→TTS 순서, 정책 전달, 침묵, 사용자 종료, 안전 거부, 5분 종료를 fake provider로 테스트한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
 실행: `poetry run pytest tests/unit/providers/test_provider_contracts.py tests/unit/conversation/test_runtime.py -q`
 
 예상 결과: fake provider, 정책 model, runtime이 없으므로 실패한다.
 
-- [ ] **단계 3: 정책 model·fake provider·비동기 runtime 구현**
+- [x] **단계 3: 정책 model·fake provider·비동기 runtime 구현**
 
-Pydantic model이 backend가 전달하는 camelCase 정책 JSON을 읽고 Python 내부에서는 일관된 타입으로 사용하도록 한다. fake provider는 네트워크 없이 고정된 transcript와 audio chunk를 반환해야 한다. runtime은 provider interface만 호출하고 사용자 컨텍스트와 목표를 신뢰하지 않은 입력으로 취급하며, 공통 안전 규칙과 시나리오 규칙을 우선 적용한다.
+Pydantic model이 backend가 전달하는 camelCase 정책 JSON을 읽고 Python 내부에서는 일관된 타입으로 사용하도록 한다. fake provider는 네트워크 없이 고정된 transcript와 audio chunk를 반환한다. runtime은 provider interface만 호출하고 금지 주제 입력을 감지하면 응답을 생성하지 않으며, 중지 요청과 5분 제한을 처리한다. 실제 보안 판정과 시나리오 정책 생성은 backend 책임으로 남긴다.
 
-- [ ] **단계 4: provider와 runtime 테스트 실행**
+- [x] **단계 4: provider와 runtime 테스트 실행**
 
 실행: `poetry run pytest tests/unit/providers/test_provider_contracts.py tests/unit/conversation/test_runtime.py -q`
 
 예상 결과: 통과한다.
 
-### 작업 3: 기준 Public provider adapter 구현
+### 작업 3: OpenAI 기준 Public provider adapter 구현
 
 **파일:**
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/public_llm_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/public_stt_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/public_tts_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/docs/providers/public-provider.md`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_llm_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_stt_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_tts_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/docs/providers/openai.md`
 - 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/config.py`
 - 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/factory.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/integration/providers/test_public_provider_adapters.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/errors.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/integration/providers/test_openai_provider_adapters.py`
 
 **인터페이스:**
-- 각 Public adapter는 작업 1의 provider protocol을 구현한다.
+- `OpenAiLlmProvider`, `OpenAiSttProvider`, `OpenAiTtsProvider`는 작업 1의 provider protocol을 각각 구현한다.
 - 자격 증명은 환경 변수에서만 읽고 provider SDK 타입은 `providers/` adapter 밖으로 내보내지 않는다.
-- adapter는 모델·voice·provider 지원 옵션을 검증하고 공통 오류 타입으로 변환한다.
+- adapter는 모델·voice·provider 지원 옵션을 검증하고 `ProviderError` 계열 공통 오류 타입으로 변환한다.
 
-- [ ] **단계 1: 기준 provider와 지원 항목 기록**
+- [x] **단계 1: 기준 provider와 지원 항목 기록**
 
-하나의 Public STT·LLM·TTS 조합을 선택하고 API 버전, streaming 방식, timeout, 데이터 보존 설정, 모델·voice·속도·톤·감정 옵션의 지원 여부를 `docs/providers/public-provider.md`에 기록한다. 지원하지 않는 조정 항목은 불가능하다고 기록한다.
+OpenAI STT·LLM·TTS 각각의 API 버전, streaming 방식, timeout, 데이터 보존 설정, 모델·voice·속도·톤·감정 옵션의 지원 여부를 `docs/providers/openai.md`에 기록한다. 지원하지 않는 조정 항목은 불가능하다고 기록한다.
 
-- [ ] **단계 2: mock 응답 기반 adapter 실패 테스트 작성**
+- [x] **단계 2: mock 응답 기반 adapter 실패 테스트 작성**
 
 정상 streaming, 인증 실패, rate limit, timeout, 잘못된 provider 응답, 취소, 지원하지 않는 voice 옵션을 테스트한다.
 
-- [ ] **단계 3: 테스트 실행 및 실패 확인**
+- [x] **단계 3: 테스트 실행 및 실패 확인**
 
-실행: `poetry run pytest tests/integration/providers/test_public_provider_adapters.py -q`
+실행: `poetry run pytest tests/integration/providers/test_openai_provider_adapters.py -q`
 
 예상 결과: 기준 Public adapter가 없으므로 실패한다.
 
-- [ ] **단계 4: adapter와 factory 연결 구현**
+- [x] **단계 4: adapter와 factory 연결 구현**
 
 provider별 직렬화와 오류 매핑은 각 adapter 안에 둔다. `ProviderFactory`가 기준 provider 설정에 맞는 adapter bundle을 반환하도록 연결하고, 실제 API 호출은 환경 변수로 활성화한다.
 
-- [ ] **단계 5: mock adapter 테스트 실행**
+- [x] **단계 5: mock adapter 테스트 실행**
 
-실행: `poetry run pytest tests/integration/providers/test_public_provider_adapters.py -q`
+실행: `poetry run pytest tests/integration/providers/test_openai_provider_adapters.py -q`
 
 예상 결과: 통과한다.
 
@@ -160,33 +163,36 @@ provider별 직렬화와 오류 매핑은 각 adapter 안에 둔다. `ProviderFa
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/voice_persona_scenario_evaluation.ipynb`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/README.md`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/artifacts/.gitkeep`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/service.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/factories.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_evaluation_service.py`
 - 수정: `/Users/yeonny0723/orca/oncue-voice/.gitignore`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_evaluation_notebook.py`
 
 **인터페이스:**
-- notebook은 `ProviderFactory#create`, `ConversationRuntime#run`, `DialoguePolicy`를 사용한다.
+- `EvaluationService`가 `ProviderFactory#create`, `ConversationRuntime#run`, `DialoguePolicy`를 사용하고 notebook은 이 서비스만 호출한다.
 - 실행 결과는 `run.json`, `policy-snapshot.json`, `provider-config.json`, `input.json`, `transcript.json`, `response.wav`, `evaluation.md`로 저장한다.
 - `policySnapshot`은 해당 실행의 variant가 적용된 최종 정책 전체를 저장한다. `policyVersion`을 요구하지 않는다.
 
-- [ ] **단계 1: fake provider를 사용하는 notebook 실행 테스트 작성**
+- [x] **단계 1: fake provider를 사용하는 notebook 실행 테스트 작성**
 
 notebook이 fake provider로 실행되고, 네 가지 MVP 통화 조합의 합성 입력을 처리하며, 정책 snapshot·텍스트·음성·평가 파일을 생성하는지 테스트한다. API key나 token이 artifact에 기록되지 않는지도 검증한다.
 
-- [ ] **단계 2: notebook 테스트 실행 및 실패 확인**
+- [x] **단계 2: notebook 테스트 실행 및 실패 확인**
 
 실행: `poetry run pytest tests/evaluation/test_evaluation_notebook.py -q`
 
 예상 결과: notebook과 평가 실행 규칙이 없으므로 실패한다.
 
-- [ ] **단계 3: 서비스 코드만 사용하는 notebook 작성**
+- [x] **단계 3: 서비스 코드만 사용하는 notebook 작성**
 
 notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람이 입력하는 1~5점과 코멘트만 담당한다. STT·LLM·TTS 구현과 별도 대화 loop를 notebook에 작성하지 않는다. 동일한 입력으로 한 번에 하나의 주요 변수만 바꾸고, 정책을 바꾼 실행은 각각의 `policySnapshot`을 저장한다.
 
-- [ ] **단계 4: 로컬 artifact와 개인정보 제한 추가**
+- [x] **단계 4: 로컬 artifact와 개인정보 제한 추가**
 
 `notebooks/artifacts/`를 Git에서 제외한다. 합성 테스트 데이터만 사용하고 실제 이름·전화번호·가족 정보·계정 정보·실제 인물의 음성을 사용하지 않는다. provider 설정에는 API key, token, password를 저장하지 않는다.
 
-- [ ] **단계 5: notebook fake 실행 검증**
+- [x] **단계 5: notebook fake 실행 검증**
 
 실행: `poetry run pytest tests/evaluation/test_evaluation_notebook.py -q` 및 `poetry run jupyter nbconvert --execute --to notebook --ExecutePreprocessor.kernel_name=python3 notebooks/voice_persona_scenario_evaluation.ipynb --output /tmp/oncue-voice-evaluation.ipynb`
 
@@ -203,30 +209,32 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 **파일:**
 - 생성: `src/oncue_voice/session/models.py`
 - 생성: `src/oncue_voice/session/auth.py`
+- 생성: `src/oncue_voice/session/store.py`
 - 생성: `src/oncue_voice/session/service.py`
 - 생성: `tests/unit/session/test_auth.py`
 - 생성: `tests/unit/session/test_service.py`
 
 **인터페이스:**
-- `ConnectionTokenVerifier#verify(token: str, session_id: str): ConnectionClaims`
-- `ConnectionClaims`는 `sessionId`, `userId`, `exp`, `jti`, `scope`를 가진다.
+- `ConnectionTokenVerifier#verify(token: str, call_session_id: str, user_id: str | None): ConnectionClaims`
+- `ConnectionClaims`는 `callSessionId`, `userId`, `exp`, `jti`, `iat`, `scope`를 가진다.
+- `callSessionId`는 백엔드와 모바일이 공유하는 통화 식별자이며, `voiceSessionId`는 보이스 서버가 생성하는 내부 식별자다.
 - `SessionService#create(request: CreateSessionRequest): VoiceSession`
-- `SessionService#close(session_id: str, reason: str): None`
-- `CreateSessionRequest`는 `sessionId`, `userId`, `policy`, `expiresAt`을 가진다. `expiresAt`은 준비된 보이스 세션을 정리할 만료 시각이며 연결 시작 시각이나 연결 토큰의 만료 시각이 아니다. `VoiceSession`은 `sessionId`, `userId`, `status`, `createdAt`을 가진다.
+- `SessionService#close(voice_session_id: str, reason: str): None`
+- `CreateSessionRequest`는 `callSessionId`, `userId`, `policy`, `expiresAt`을 가진다. `expiresAt`은 준비된 보이스 세션을 정리할 만료 시각이며 연결 시작 시각이나 연결 토큰의 만료 시각이 아니다. `VoiceSession`은 `voiceSessionId`, `callSessionId`, `userId`, `policy`, `expiresAt`, `status`, `createdAt`을 가진다.
 
-- [ ] **단계 1: 토큰 검증 테스트 작성**
+- [x] **단계 1: 토큰 검증 테스트 작성**
 
 유효한 서명, 만료 토큰, 다른 session ID, 다른 user claim, scope 누락, 이미 사용한 `jti`를 테스트한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
 실행: `poetry run pytest tests/unit/session -q`
 
 예상 결과: verifier와 session service가 없으므로 실패한다.
 
-- [ ] **단계 3: 검증과 짧은 기술 상태 구현**
+- [x] **단계 3: 검증과 짧은 기술 상태 구현**
 
-백엔드 공개키로 서명된 토큰을 검증한다. 사용한 `jti`는 토큰 TTL 동안 Redis에 저장하고, 비즈니스 데이터가 아닌 기술 세션 상태만 Redis에 보관한다. token secret과 credential은 로그에 남기지 않는다.
+백엔드 공개키로 서명된 RS256 토큰을 검증한다. `voice:connect` scope, call session ID, 필요 시 user ID를 확인하고, 사용한 `jti`는 토큰 TTL 동안 Redis에 원자적으로 저장한다. 보이스 세션 준비 데이터는 Redis에 보관하며, token secret과 credential은 로그에 남기지 않는다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
@@ -263,9 +271,9 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 백엔드 요청에는 별도의 서비스 자격 증명을 사용한다. 모바일 사용자 access token은 내부 route에서 받지 않는다. 세션 생성 시에는 정책과 만료 시각을 저장할 뿐 실제 STT·LLM·TTS provider 연결을 열지 않는다. 사용자가 WebRTC 연결을 완료한 뒤 실제 runtime과 provider를 시작한다. 최종 결과는 타입이 지정된 callback client로 보내고 `callSessionId` 기준 중복 결과를 안전하게 처리한다.
 
-- [ ] **단계 4: API 테스트 실행 및 통과 확인**
+- [x] **단계 4: 인증·세션 테스트 실행 및 통과 확인**
 
-실행: `poetry run pytest tests/unit/api/test_session_api.py -q`
+실행: `poetry run pytest tests/unit/session -q`
 
 예상 결과: 통과한다.
 

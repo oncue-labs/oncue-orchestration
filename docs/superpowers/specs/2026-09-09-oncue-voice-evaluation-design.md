@@ -61,7 +61,7 @@ Public Provider Adapter
 
 runtime은 interface만 사용하고 provider별 요청·응답 변환, 오류 변환, 지원하지 않는 voice 옵션 검증은 각 adapter가 담당한다.
 
-MVP에서는 하나의 Public provider 조합만 실제로 연결한다. 다만 `ProviderFactory`와 공통 interface는 Local provider를 나중에 추가할 수 있도록 provider 종류와 설정으로 선택할 수 있게 만든다. 지금 Local provider adapter의 실제 구현이나 Local LLM container를 만들지는 않는다.
+MVP의 기준 Public provider는 OpenAI로 확정하며, STT·LLM·TTS를 각각 별도 API adapter로 연결한다. 통합 Realtime 세션 하나로 처리하는 방식은 STT·LLM·TTS를 독립적으로 비교하기 어렵기 때문에 MVP에서 사용하지 않는다. `ProviderFactory`와 공통 interface는 Local provider를 나중에 추가할 수 있도록 provider 종류와 설정으로 선택할 수 있게 만든다. 지금 Local provider adapter의 실제 구현이나 Local LLM container를 만들지는 않는다.
 
 ### 4.2 A/B 비교는 하나의 Public provider 내부에서 먼저 수행한다
 
