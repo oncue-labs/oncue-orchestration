@@ -2,14 +2,15 @@
 
 ## 1. 목적
 
-`oncue-voice`의 통화 기능을 본격적으로 구현하기 전에, Public STT·LLM·TTS 서비스를 이용해 다음을 확인한다.
+`oncue-voice`의 통화 기능을 본격적으로 구현하기 전에, Public 음성 provider를 이용해 다음을 확인한다.
 
 - 페르소나별 목소리와 말투를 실제로 조정할 수 있는가
 - 페르소나와 시나리오 정책이 대화에 반영되는가
 - 시나리오 컨텍스트와 통화 목표가 원하는 방향으로 대화를 이끄는가
+- 분리형 STT·LLM·TTS와 speech-to-speech 방식 중 어떤 경로가 품질과 지연 시간에 적합한가
 - provider의 모델·voice·설정을 바꿨을 때 품질이 개선되는가
 
-검증은 `oncue-voice`의 실제 서비스 코드와 provider adapter를 사용해 수행한다. 검증 결과가 기준을 충족한 뒤에 WebRTC를 포함한 전체 통화 기능을 완성한다.
+검증은 `oncue-voice`의 실제 서비스 코드와 provider adapter를 사용해 수행한다. 검증 결과가 기준을 충족한 뒤에 WebRTC를 포함한 전체 통화 기능을 완성한다. 모바일은 계속 `oncue-voice`에 연결하며, 모바일이 Public provider에 직접 연결하지 않는다.
 
 ## 2. 배경과 문제
 
@@ -22,8 +23,10 @@
 ### 포함 범위
 
 - provider 중립적인 STT·LLM·TTS adapter interface와 선택 구조
-- 하나의 Public provider 조합을 기준으로 한 실제 품질 검증
-- 같은 provider의 하위 모델·voice·설정 A/B 비교
+- provider 중립적인 양방향 Realtime adapter interface와 선택 구조
+- OpenAI Realtime을 첫 speech-to-speech 후보로 하는 연결 가능성 검증
+- 분리형 pipeline과 Realtime 경로의 같은 입력 기반 비교
+- 각 경로의 모델·voice·설정 A/B 비교
 - 페르소나·시나리오별 대화 평가
 - 실행 당시의 전체 `DialoguePolicy` snapshot 저장
 - 생성 음성·대화 텍스트·평가 결과의 로컬 artifact 저장
@@ -35,6 +38,8 @@
 - MVP에서 사용자가 voice를 직접 설정하는 기능
 - 사용자 음성 복제 또는 실제 인물의 목소리 복제
 - Local LLM/STT/TTS의 실제 구현과 Compose service 추가
+- Raon-SpeechChat 또는 PersonaPlex의 실제 adapter 구현
+- 모바일과 Public provider의 직접 연결
 - 운영 서버·운영 DB에 음성 또는 대화 텍스트 저장
 - 평가 결과를 판정하는 별도 LLM evaluator
 - WebRTC·TURN 연결 자체의 품질 평가
@@ -43,7 +48,7 @@ WebRTC·TURN은 provider와 대화 품질 검증이 끝난 뒤 별도의 통합 
 
 ## 4. 확정 결정
 
-### 4.1 Adapter layer를 먼저 만든다
+### 4.1 분리형과 Realtime adapter를 함께 둔다
 
 대화 runtime은 외부 provider SDK를 직접 호출하지 않는다. 다음과 같은 provider 중립 interface를 먼저 정의한다.
 
@@ -61,36 +66,72 @@ Public Provider Adapter
 
 runtime은 interface만 사용하고 provider별 요청·응답 변환, 오류 변환, 지원하지 않는 voice 옵션 검증은 각 adapter가 담당한다.
 
-MVP의 기준 Public provider는 OpenAI로 확정하며, STT·LLM·TTS를 각각 별도 API adapter로 연결한다. 통합 Realtime 세션 하나로 처리하는 방식은 STT·LLM·TTS를 독립적으로 비교하기 어렵기 때문에 MVP에서 사용하지 않는다. `ProviderFactory`와 공통 interface는 Local provider를 나중에 추가할 수 있도록 provider 종류와 설정으로 선택할 수 있게 만든다. 지금 Local provider adapter의 실제 구현이나 Local LLM container를 만들지는 않는다.
+기존 분리형 경로는 비교·fallback 경로로 유지한다. 첫 speech-to-speech 후보는 OpenAI Realtime이며, `oncue-voice` 내부의 별도 `RealtimeProvider`를 통해 연결한다. Realtime provider는 음성 조각을 보내고 오디오·텍스트·상태 이벤트를 받는 양방향 세션을 제공한다. 분리형 provider의 `LlmProvider`, `SttProvider`, `TtsProvider`와 Realtime provider는 하나의 인터페이스로 억지로 합치지 않는다.
 
-### 4.2 A/B 비교는 하나의 Public provider 내부에서 먼저 수행한다
+```text
+oncue-voice conversation bridge
+        ├── ConversationRuntime → STT → LLM → TTS
+        └── RealtimeRuntime      → RealtimeProvider → OpenAI Realtime
+```
 
-초기 A/B 테스트에서는 provider 자체를 바꾸지 않고 다음 항목을 비교한다.
+두 경로 모두 backend가 만든 `DialoguePolicy`를 사용한다. Realtime 경로에서도 정책 조합·안전 경계·세션 인증은 `oncue-voice`가 담당하며, 모바일이 OpenAI에 직접 연결하지 않는다. 분리형 경로는 `ProviderFactory`가 선택하고, Realtime 경로는 별도의 provider 생성 함수와 `RealtimeSessionOptions`로 선택한다. Local provider와 Local LLM container는 나중에 추가하며 이번 범위에는 포함하지 않는다.
 
+### 4.2 Realtime provider 공통 계약
+
+```text
+RealtimeProvider#connect(
+    policy: DialoguePolicy,
+    options: RealtimeSessionOptions,
+) -> RealtimeSession
+RealtimeSession#send_audio_chunk(audio: bytes) -> None
+RealtimeSession#events() -> AsyncIterator[RealtimeEvent]
+RealtimeSession#close() -> None
+```
+
+`RealtimeSessionOptions`는 provider 모델, voice, 입력·출력 오디오 형식, sample rate와 turn detection 설정을 담는다. `RealtimeEvent`는 provider 고유 event object가 아니라 다음과 같은 내부 이벤트로 변환한다.
+
+- `audio_delta`: 사용자에게 재생할 음성 조각
+- `transcript_delta`: 평가 화면에 표시할 중간 텍스트
+- `transcript_completed`: 발화가 확정된 텍스트
+- `speech_started`와 `speech_stopped`: 사용자 발화 감지 상태
+- `response_completed`: 한 번의 응답 완료
+- `error`: provider 오류를 내부 오류로 변환한 결과
+
+Realtime 모델은 음성을 텍스트로 바꾸어야만 응답하는 분리형 pipeline이 아니다. 따라서 `transcript_completed`가 오기 전에도 모델이 음성 입력을 처리할 수 있으며, 평가용 transcript는 응답 생성의 필수 입력으로 취급하지 않는다.
+
+### 4.3 A/B 비교는 한 Public provider의 두 경로에서 먼저 수행한다
+
+초기 비교에서는 provider 자체를 바꾸지 않고 다음 항목을 비교한다.
+
+- 분리형 pipeline과 Realtime 경로
 - provider가 제공하는 하위 LLM 모델
+- Realtime 모델
 - system prompt와 대화 정책
 - temperature 등 모델 설정
 - TTS voice ID
+- Realtime voice
 - provider가 지원하는 속도·톤·감정 관련 설정
 - STT 언어와 인식 설정
+- Realtime turn detection과 interruption 처리
 
-기준 provider가 필요한 목소리·말투 조정을 지원하지 않거나 시나리오 목표를 안정적으로 달성하지 못하면, 그때 두 번째 Public provider adapter를 추가한다. 여러 provider를 처음부터 동시에 구현하지 않는다.
+분리형과 Realtime 중 하나를 운영 경로로 선택하기 전까지는 두 경로의 결과를 같은 기준으로 기록한다. OpenAI가 필요한 목소리·말투 조정을 지원하지 않거나 시나리오 목표를 안정적으로 달성하지 못하면, 그때 두 번째 Public provider adapter를 추가한다. 여러 provider를 처음부터 동시에 구현하지 않는다.
 
 provider가 지원하지 않는 설정을 adapter가 조용히 무시해서는 안 된다. 실행 전에 지원 여부를 검증하고, 지원하지 않는 경우 평가 결과에 명시적인 오류로 남긴다.
 
-### 4.3 Jupyter notebook은 `oncue-voice`의 실제 코드를 사용한다
+### 4.4 Jupyter notebook은 `oncue-voice`의 실제 코드를 사용한다
 
 notebook은 다음 파일로 둔다.
 
 ```text
 oncue-voice/notebooks/voice_persona_scenario_evaluation.ipynb
+oncue-voice/notebooks/realtime_persona_scenario_evaluation.ipynb
 ```
 
-notebook 안에는 STT·LLM·TTS 구현이나 별도 대화 로직을 선언하지 않는다. `oncue-voice`가 제공하는 application factory, `ConversationRuntime`, provider interface, policy model과 실제 adapter를 사용한다.
+기존 notebook은 분리형 pipeline을 평가하고, Realtime notebook은 Realtime provider를 평가한다. notebook 안에는 provider 구현이나 별도 대화 로직을 선언하지 않는다. `oncue-voice`가 제공하는 평가 service, runtime, provider interface, policy model과 실제 adapter를 사용한다.
 
 notebook의 책임은 테스트 케이스와 variant 선택, 실행 요청, 결과 표시, 수동 평가 기록뿐이다. 서비스 코드를 notebook에서 실행할 수 있도록 필요한 조립 진입점은 `oncue-voice` 코드에 둔다.
 
-### 4.4 평가 결과는 정책 snapshot으로 재현한다
+### 4.5 평가 결과는 정책 snapshot으로 재현한다
 
 정책 버전 번호를 사용하지 않는다. 매 실행 시 runtime에 실제로 전달된 최종 `DialoguePolicy` 전체를 `policySnapshot`으로 저장한다.
 
@@ -118,19 +159,19 @@ notebook의 책임은 테스트 케이스와 variant 선택, 실행 요청, 결�
         ↓
 oncue-voice application factory
         ↓
-ConversationRuntime
-        ↓
-STT → LLM → TTS
+        ├── ConversationRuntime → STT → LLM → TTS
+        └── RealtimeRuntime → RealtimeProvider → 음성 입력·음성 출력
         ↓
 대화 텍스트·생성 음성·실행 metadata
         ↓
 사람의 평가 점수와 코멘트
 ```
 
-평가는 두 방식으로 수행할 수 있다.
+평가는 다음 두 경로를 각각 수행할 수 있다.
 
 - 대화 정책 평가: 동일한 텍스트 사용자 발화를 넣어 LLM의 역할·정책·목표 반영을 확인한다.
 - 음성 pipeline 평가: 동일한 합성 사용자 음성 입력을 넣어 STT 인식부터 LLM 응답과 TTS 출력까지 확인한다.
+- Realtime 음성 평가: 동일한 합성 사용자 음성 입력을 작은 조각으로 보내고, 음성 출력·중간 transcript·응답 완료 이벤트를 확인한다.
 
 두 방식 모두 실제 `oncue-voice` runtime과 adapter를 사용하며, notebook이 별도 처리 로직을 갖지 않는다.
 
@@ -140,6 +181,7 @@ STT → LLM → TTS
 - 한 번에 하나의 주요 변수만 변경한다.
 - variant A와 B의 실행 결과를 각각 저장한다.
 - Public provider의 모델명과 API 설정을 기록한다.
+- 평가 경로(`split_pipeline` 또는 `realtime`)를 기록한다.
 - provider 응답의 비결정성은 숨기지 않고 실행 metadata에 기록한다.
 - prompt나 정책을 변경한 경우 각 실행의 `policySnapshot`을 별도로 저장한다.
 - 평가자는 결과를 보지 않고 먼저 판단 기준을 확인한 뒤 점수와 코멘트를 기록한다.
@@ -178,7 +220,7 @@ STT → LLM → TTS
 - 위협이나 긴급 상황을 이용해 사용자를 조종하지 않는가
 - 음성 복제나 실제 사람의 목소리를 흉내 내지 않는가
 
-정량 metadata로는 첫 음성까지의 시간, 각 응답 지연, 전체 실행 시간, audio duration, provider 오류 여부를 기록한다. 초기 합격 여부는 자동 점수만으로 결정하지 않고 사람이 평가한다.
+정량 metadata로는 첫 음성까지의 시간, 각 응답 지연, 전체 실행 시간, audio duration, provider 오류 여부를 기록한다. Realtime은 첫 `audio_delta`까지의 시간과 사용자 발화 중 끼어들기(interruption) 처리 여부도 기록한다. 초기 합격 여부는 자동 점수만으로 결정하지 않고 사람이 평가한다.
 
 ## 8. 로컬 평가 artifact
 
@@ -225,14 +267,15 @@ artifacts/<runId>/<variantId>/
 
 ### `oncue-voice` 구현 계획
 
-기존 계획의 provider 관련 작업을 앞당겨 다음 순서로 재구성한다.
+기존 계획의 provider 관련 작업을 다음 순서로 재구성한다.
 
 1. Python 패키지·설정과 notebook 실행 환경
 2. provider 공통 interface·factory·fake provider
 3. 대화 정책 model과 `ConversationRuntime`
-4. 하나의 Public provider adapter
-5. `voice_persona_scenario_evaluation.ipynb`와 A/B 검증
-6. 평가 기준 통과 후 세션·내부 제어·WebRTC·TURN 구현
+4. Realtime provider interface·fake provider
+5. OpenAI Realtime adapter
+6. 분리형 OpenAI adapter와 Realtime adapter를 사용하는 두 평가 notebook
+7. 평가 기준 통과 후 세션·내부 제어·WebRTC·TURN 구현
 
 ### `oncue-orchestration` 구현 계획
 
@@ -241,10 +284,12 @@ notebook은 `oncue-voice` 저장소에서 Poetry 환경으로 실행한다. 오�
 ## 10. 완료 기준
 
 - `oncue-voice` runtime이 특정 provider SDK에 직접 의존하지 않고 공통 provider interface를 사용한다.
-- 하나의 Public provider와 그 하위 모델·voice 설정을 notebook에서 바꿔 실행할 수 있다.
+- 분리형과 Realtime 경로를 같은 `DialoguePolicy`로 실행할 수 있다.
+- 하나의 Public provider와 그 하위 모델·voice 설정을 두 notebook에서 바꿔 실행할 수 있다.
 - 네 가지 MVP 통화 조합을 같은 입력으로 A/B 비교할 수 있다.
 - 각 실행에 실제 사용한 `policySnapshot`과 비밀값이 제외된 provider 설정이 남는다.
 - 생성 음성·대화 텍스트·평가 코멘트를 로컬 artifact로 다시 확인할 수 있다.
 - 사람이 음성 품질·페르소나 일관성·시나리오 목표·안전성을 평가할 수 있다.
 - provider가 충분하지 않을 때 기존 runtime을 변경하지 않고 두 번째 Public provider adapter를 추가할 수 있다.
+- Realtime provider를 다른 speech-to-speech provider로 교체할 수 있는 내부 계약이 있다.
 - 운영 API와 운영 DB에는 음성·대화 텍스트가 저장되지 않는다.

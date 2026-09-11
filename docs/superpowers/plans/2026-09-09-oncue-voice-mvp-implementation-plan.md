@@ -2,9 +2,9 @@
 
 > **에이전트 작업자 필수 안내:** 이 계획을 작업별로 실행할 때는 `superpowers:subagent-driven-development` 또는 `superpowers:executing-plans`를 사용한다. 작업 단계는 추적할 수 있도록 체크박스(`- [ ]`)로 작성되어 있다.
 
-**목표:** provider 교체가 가능한 Python 음성 서비스를 먼저 만들고, 하나의 Public STT·LLM·TTS provider 조합과 하위 모델·voice 설정을 Jupyter notebook에서 검증한 뒤, 인증된 WebRTC 통화와 최종 결과 callback을 구현한다.
+**목표:** provider 교체가 가능한 Python 음성 서비스를 먼저 만들고, 분리형 STT·LLM·TTS 경로와 speech-to-speech Realtime 경로를 하나의 Public provider 기준으로 Jupyter notebook에서 비교 검증한 뒤, 인증된 WebRTC 통화와 최종 결과 callback을 구현한다.
 
-**아키텍처:** `src/oncue_voice` 패키지 안에서 provider interface·factory, 대화 정책·runtime, session, media를 기능별로 나눈다. 대화 runtime은 provider SDK에 직접 의존하지 않고 공통 interface를 사용한다. `notebooks/voice_persona_scenario_evaluation.ipynb`는 실제 `oncue-voice` service code를 사용해 평가하며, notebook 안에 STT·LLM·TTS나 별도 대화 처리 모듈을 구현하지 않는다.
+**아키텍처:** `src/oncue_voice` 패키지 안에서 분리형 provider interface·factory, Realtime provider interface·factory, 대화 정책·runtime, session, media를 기능별로 나눈다. 각 runtime은 provider SDK에 직접 의존하지 않고 자기 경로의 공통 interface를 사용한다. `notebooks/voice_persona_scenario_evaluation.ipynb`와 `notebooks/realtime_persona_scenario_evaluation.ipynb`는 실제 `oncue-voice` service code를 사용해 평가하며, notebook 안에 provider나 별도 대화 처리 모듈을 구현하지 않는다.
 
 **기술 스택:** Python 3.11, Poetry, FastAPI, Uvicorn, asyncio, aiortc, Pydantic, 짧은 기술 상태 저장용 Redis, Jupyter, pytest, pytest-asyncio, HTTPX.
 
@@ -15,10 +15,12 @@
 - Python 3.11, Poetry, `src/oncue_voice` 패키지, 타입 힌트, wildcard import 금지를 사용한다.
 - 사용자·예약·페르소나 DB에 직접 의존하지 않는다.
 - 활성 상태인 모든 페르소나·시나리오 조합을 받아들이고, 전달받은 대화 정책 또는 기본 정책을 실행한다.
-- 대화 runtime은 `LlmProvider`, `SttProvider`, `TtsProvider` interface에만 의존하며 provider SDK를 직접 import하지 않는다.
-- `ProviderFactory`를 통해 provider 종류와 모델·voice 설정을 선택한다. MVP에서 실제 연결하는 기준은 하나의 Public provider 조합이다.
-- 기준 Public provider가 충분하지 않을 때만 같은 interface에 두 번째 Public provider adapter를 추가한다.
+- 분리형 대화 runtime은 `LlmProvider`, `SttProvider`, `TtsProvider` interface에만 의존하며 provider SDK를 직접 import하지 않는다.
+- Realtime runtime은 `RealtimeProvider`, `RealtimeSession`, `RealtimeEvent` interface에만 의존한다.
+- `ProviderFactory`를 통해 provider 종류와 설정을 선택한다. MVP에서 실제 비교하는 기준 Public provider는 OpenAI다.
+- 기준 Public provider가 충분하지 않을 때만 같은 경로의 두 번째 Public provider adapter를 추가한다.
 - Local provider를 나중에 연결할 확장 지점은 두지만 MVP에서 Local provider 구현이나 Local LLM Compose service는 추가하지 않는다.
+- 모바일과 OpenAI Realtime의 직접 연결은 하지 않는다. `oncue-voice`가 정책·인증 경계를 유지한 채 provider 연결을 중계한다.
 - 모바일 연결 토큰을 독립적으로 검증하고 토큰 비밀값을 로그에 남기지 않는다.
 - JSON에는 `createdAt`을 사용하고 시간은 UTC로 처리한다.
 - 음성, 운영 통화 대화 텍스트, 장기 사용자 데이터를 운영 환경에 저장하지 않는다.
@@ -116,7 +118,7 @@ Pydantic model이 backend가 전달하는 camelCase 정책 JSON을 읽고 Python
 
 예상 결과: 통과한다.
 
-### 작업 3: OpenAI 기준 Public provider adapter 구현
+### 작업 3: OpenAI 분리형 Public provider adapter 구현
 
 **파일:**
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_llm_provider.py`
@@ -157,10 +159,92 @@ provider별 직렬화와 오류 매핑은 각 adapter 안에 둔다. `ProviderFa
 
 예상 결과: 통과한다.
 
+### 작업 3A: speech-to-speech Realtime provider 계약과 fake provider 구현
+
+기존 STT·LLM·TTS 분리형 adapter를 유지하면서, 음성을 텍스트로 확정하지 않아도 음성 입력과 음성 출력을 양방향으로 처리할 수 있는 별도 계약을 추가한다. 이 단계에서는 외부 네트워크 없이 실시간 세션의 송수신·종료·오류 변환을 검증한다.
+
+**파일:**
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime_models.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_realtime_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/realtime_runtime.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/providers/test_realtime_provider_contract.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/conversation/test_realtime_runtime.py`
+
+**인터페이스:**
+- `RealtimeProvider#connect(policy: DialoguePolicy, options: RealtimeSessionOptions): RealtimeSession`
+- `RealtimeSession#send_audio_chunk(audio: bytes): None`
+- `RealtimeSession#events(): AsyncIterator[RealtimeEvent]`
+- `RealtimeSession#close(): None`
+- `RealtimeSessionOptions`는 모델·voice·입출력 오디오 형식·sample rate·turn detection 설정을 가진다.
+- `RealtimeEvent`는 `audio_delta`, `transcript_delta`, `transcript_completed`, `speech_started`, `speech_stopped`, `response_completed`, `error` 중 하나다.
+- `RealtimeRuntime`은 정책을 session에 전달하고 오디오 조각을 보내며, provider event를 내부 결과로 노출한다. transcript 확정 여부를 응답 생성의 전제 조건으로 두지 않는다.
+
+- [x] **단계 1: Realtime 계약과 runtime 실패 테스트 작성**
+
+오디오 조각의 순서 보존, policy 전달, 오디오·transcript·완료 event 전달, provider 오류, close 중복 호출을 fake provider 기준으로 테스트한다.
+
+- [x] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `poetry run pytest tests/unit/providers/test_realtime_provider_contract.py tests/unit/conversation/test_realtime_runtime.py -q`
+
+예상 결과: Realtime 모델·provider·runtime이 없으므로 실패한다.
+
+- [x] **단계 3: provider 중립 모델·fake provider·runtime 구현**
+
+Realtime event를 내부 모델로 정의하고 fake provider가 입력 오디오를 기록한 뒤 설정된 event를 반환하게 한다. provider SDK와 네트워크는 이 단계에 포함하지 않는다.
+
+- [x] **단계 4: 계약과 runtime 테스트 실행**
+
+실행: `poetry run pytest tests/unit/providers/test_realtime_provider_contract.py tests/unit/conversation/test_realtime_runtime.py -q`
+
+예상 결과: 통과한다.
+
+### 작업 3B: OpenAI Realtime adapter와 평가 진입점 구현
+
+OpenAI Python SDK의 Realtime WebSocket 연결을 `RealtimeProvider` 계약으로 감싼다. OpenAI 고유 event object와 session 설정은 adapter 안에서만 다루며, 실제 통화 연결은 다음 작업의 WebRTC bridge에서 연결한다.
+
+**파일:**
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_realtime_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/realtime_service.py`
+- 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/factory.py`
+- 수정: `/Users/yeonny0723/orca/oncue-voice/pyproject.toml`
+- 수정: `/Users/yeonny0723/orca/oncue-voice/docs/providers/openai.md`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/integration/providers/test_openai_realtime_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_realtime_evaluation_service.py`
+
+**인터페이스와 제약:**
+- OpenAI adapter는 `client.realtime.connect`를 통해 provider 연결을 열고 `session.update`로 정책·voice·오디오·turn detection을 설정한다.
+- 입력 오디오는 base64로 provider event에 실어 보내고, `response.output_audio.delta`는 내부 `audio_delta`로 변환한다.
+- 출력 transcript는 평가용으로 수집하되 모델 응답을 만들기 위한 중간 STT 단계로 사용하지 않는다.
+- provider의 `error` event는 공통 `ProviderError` 계열로 변환하고, API key·원문 음성·정책 비밀값은 로그와 artifact에 기록하지 않는다.
+- Realtime 평가 service는 실제 `RealtimeProvider`와 `DialoguePolicy`를 사용해 같은 4개 MVP 통화 조합을 실행하고, 기존 artifact 구조에 `evaluationPath: realtime`과 첫 audio 지연 시간을 추가한다.
+
+- [x] **단계 1: OpenAI Realtime mock adapter 실패 테스트 작성**
+
+연결 시 session 설정, policy 지시사항, voice, audio event 직렬화, output audio·transcript event 변환, provider error 변환을 mock client로 검증한다. 실제 OpenAI API는 호출하지 않는다.
+
+- [x] **단계 2: 테스트 실행 및 실패 확인**
+
+실행: `poetry run pytest tests/integration/providers/test_openai_realtime_provider.py tests/evaluation/test_realtime_evaluation_service.py -q`
+
+예상 결과: OpenAI Realtime adapter와 평가 service가 없으므로 실패한다.
+
+- [x] **단계 3: OpenAI adapter·factory·Realtime 평가 service 구현**
+
+SDK 연결과 event 변환을 adapter에 구현하고, provider 생성 함수가 해당 adapter를 만들게 한다. 평가 service는 notebook에서 직접 사용할 수 있는 작은 진입점으로 유지한다.
+
+- [x] **단계 4: mock adapter 테스트 실행**
+
+실행: `poetry run pytest tests/integration/providers/test_openai_realtime_provider.py tests/evaluation/test_realtime_evaluation_service.py -q`
+
+예상 결과: 통과한다.
+
 ### 작업 4: Jupyter 기반 음성·대화 품질 평가와 A/B 실행 구현
 
 **파일:**
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/voice_persona_scenario_evaluation.ipynb`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/realtime_persona_scenario_evaluation.ipynb`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/README.md`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/artifacts/.gitkeep`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/service.py`
@@ -170,7 +254,8 @@ provider별 직렬화와 오류 매핑은 각 adapter 안에 둔다. `ProviderFa
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_evaluation_notebook.py`
 
 **인터페이스:**
-- `EvaluationService`가 `ProviderFactory#create`, `ConversationRuntime#run`, `DialoguePolicy`를 사용하고 notebook은 이 서비스만 호출한다.
+- 기존 `EvaluationService`는 `ProviderFactory#create`, `ConversationRuntime#run`, `DialoguePolicy`를 사용하고 분리형 pipeline notebook은 이 서비스만 호출한다.
+- `RealtimeEvaluationService`는 `RealtimeProvider`, `RealtimeRuntime`, `DialoguePolicy`를 사용하고 Realtime notebook은 이 서비스만 호출한다.
 - 실행 결과는 `run.json`, `policy-snapshot.json`, `provider-config.json`, `input.json`, `transcript.json`, `response.wav`, `evaluation.md`로 저장한다.
 - `policySnapshot`은 해당 실행의 variant가 적용된 최종 정책 전체를 저장한다. `policyVersion`을 요구하지 않는다.
 
@@ -198,11 +283,11 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 예상 결과: fake provider로 notebook이 재현 가능하게 실행되고 artifact가 생성된다.
 
-- [ ] **단계 6: Public provider A/B 수동 평가 실행**
+- [ ] **단계 6: 분리형·Realtime Public provider A/B 수동 평가 실행**
 
 실행: `poetry run jupyter lab notebooks/voice_persona_scenario_evaluation.ipynb`
 
-같은 입력으로 하위 LLM 모델·prompt·temperature·TTS voice ID·지원되는 음성 설정을 비교한다. 음성 품질, 페르소나 일관성, 시나리오 목표, 안전성을 사람이 평가하고 첫 음성까지의 시간과 응답 지연을 기록한다. 기준 provider가 충분하지 않으면 이 결과를 근거로 두 번째 Public provider adapter를 별도 작업으로 추가한다.
+같은 입력으로 `split_pipeline`과 `realtime` 경로를 비교하고, 각 경로의 모델·prompt·temperature·voice ID·지원되는 음성 설정을 비교한다. 음성 품질, 페르소나 일관성, 시나리오 목표, 안전성을 사람이 평가하고 첫 음성까지의 시간과 응답 지연을 기록한다. OpenAI가 충분하지 않으면 이 결과를 근거로 두 번째 Public provider adapter를 별도 작업으로 추가한다.
 
 ### 작업 5: 독립적인 토큰 인증과 세션 모델 구현
 
@@ -269,7 +354,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 - [ ] **단계 3: 내부 제어 route와 callback client 구현**
 
-백엔드 요청에는 별도의 서비스 자격 증명을 사용한다. 모바일 사용자 access token은 내부 route에서 받지 않는다. 세션 생성 시에는 정책과 만료 시각을 저장할 뿐 실제 STT·LLM·TTS provider 연결을 열지 않는다. 사용자가 WebRTC 연결을 완료한 뒤 실제 runtime과 provider를 시작한다. 최종 결과는 타입이 지정된 callback client로 보내고 `callSessionId` 기준 중복 결과를 안전하게 처리한다.
+백엔드 요청에는 별도의 서비스 자격 증명을 사용한다. 모바일 사용자 access token은 내부 route에서 받지 않는다. 세션 생성 시에는 정책과 만료 시각을 저장할 뿐 실제 분리형 또는 Realtime provider 연결을 열지 않는다. 사용자가 WebRTC 연결을 완료한 뒤 실제 runtime과 선택된 provider를 시작한다. 최종 결과는 타입이 지정된 callback client로 보내고 `callSessionId` 기준 중복 결과를 안전하게 처리한다.
 
 - [x] **단계 4: 인증·세션 테스트 실행 및 통과 확인**
 
@@ -308,7 +393,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 - [ ] **단계 3: aiortc 시그널링과 음성 track 구현**
 
-offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
+offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. WebRTC media track을 선택된 `ConversationRuntime` 또는 `RealtimeRuntime`의 오디오 입력·출력과 연결한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
@@ -330,7 +415,7 @@ offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE �
 
 - [ ] **단계 1: 세션부터 오디오까지 통합 테스트 작성**
 
-fake provider로 세션을 만들고 offer를 인증하며 테스트 오디오 track을 교환한다. 출력 track과 최종 결과 callback을 확인하고 운영 저장소에 오디오가 저장되지 않는지 검증한다.
+fake provider로 세션을 만들고 offer를 인증하며 테스트 오디오 track을 교환한다. 분리형 runtime과 Realtime runtime 각각의 출력 track과 최종 결과 callback을 확인하고 운영 저장소에 오디오가 저장되지 않는지 검증한다.
 
 - [ ] **단계 2: 통합 테스트 실행 및 실패 확인**
 
