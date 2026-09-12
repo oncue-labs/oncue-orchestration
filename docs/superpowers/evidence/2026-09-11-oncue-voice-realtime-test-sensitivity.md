@@ -1,7 +1,7 @@
 # Realtime provider 테스트 민감도 근거
 
 - **검증 행위:** `pcm16` 입력·출력 형식을 OpenAI Realtime session 설정의 `audio/pcm`으로 변환한다.
-- **운영 코드 위치:** `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_realtime_provider.py`
+- **운영 코드 위치:** `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime/openai_provider.py`
 - **결함을 잡아야 하는 테스트:** `tests/integration/providers/test_openai_realtime_provider.py::test_openai_realtime_adapter_sends_policy_and_audio_event`
 - **기준 명령과 결과:** `pytest tests/integration/providers/test_openai_realtime_provider.py -q` → `3 passed`
 - **mutation:** `pcm16` 변환 결과의 media type을 `audio/pcm`에서 `audio/pcmu`로 변경했다.

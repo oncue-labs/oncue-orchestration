@@ -53,7 +53,7 @@ WebRTC·TURN은 provider와 대화 품질 검증이 끝난 뒤 별도의 통합 
 대화 runtime은 외부 provider SDK를 직접 호출하지 않는다. 다음과 같은 provider 중립 interface를 먼저 정의한다.
 
 ```text
-ConversationRuntime
+SplitPipelineRuntime
         ↓
 ProviderFactory
         ↓
@@ -70,7 +70,7 @@ runtime은 interface만 사용하고 provider별 요청·응답 변환, 오류 �
 
 ```text
 oncue-voice conversation bridge
-        ├── ConversationRuntime → STT → LLM → TTS
+        ├── SplitPipelineRuntime → STT → LLM → TTS
         └── RealtimeRuntime      → RealtimeProvider → OpenAI Realtime
 ```
 
@@ -159,7 +159,7 @@ notebook의 책임은 테스트 케이스와 variant 선택, 실행 요청, 결�
         ↓
 oncue-voice application factory
         ↓
-        ├── ConversationRuntime → STT → LLM → TTS
+        ├── SplitPipelineRuntime → STT → LLM → TTS
         └── RealtimeRuntime → RealtimeProvider → 음성 입력·음성 출력
         ↓
 대화 텍스트·생성 음성·실행 metadata
@@ -271,7 +271,7 @@ artifacts/<runId>/<variantId>/
 
 1. Python 패키지·설정과 notebook 실행 환경
 2. provider 공통 interface·factory·fake provider
-3. 대화 정책 model과 `ConversationRuntime`
+3. 대화 정책 model과 `SplitPipelineRuntime`
 4. Realtime provider interface·fake provider
 5. OpenAI Realtime adapter
 6. 분리형 OpenAI adapter와 Realtime adapter를 사용하는 두 평가 notebook

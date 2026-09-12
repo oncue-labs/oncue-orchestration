@@ -93,7 +93,7 @@ Python 기반의 범용 음성 세션, WebRTC 미디어, STT·LLM·TTS 연결과
 
 대화 runtime은 특정 provider SDK에 직접 의존하지 않고 provider 중립적인 `LlmProvider`, `SttProvider`, `TtsProvider` interface와 `ProviderFactory`를 사용한다. MVP에서는 하나의 Public provider 조합과 그 하위 모델·voice 설정을 먼저 검증하며, provider가 충분하지 않을 때만 같은 interface에 두 번째 Public provider adapter를 추가한다. v1.0.0 이후 Local provider를 연결할 수 있도록 확장 지점은 먼저 두지만, MVP에서 Local provider를 구현하거나 실행하지 않는다.
 
-`oncue-voice/notebooks/voice_persona_scenario_evaluation.ipynb`는 보이스 서비스의 실제 application factory, `ConversationRuntime`, provider adapter와 정책 model을 사용한다. notebook 안에 STT·LLM·TTS 구현이나 별도의 대화 처리 모듈을 만들지 않는다. 실행 당시 실제 runtime에 전달된 최종 대화 정책은 정책 스냅샷으로 로컬 평가 artifact에 저장한다.
+`oncue-voice/notebooks/voice_persona_scenario_evaluation.ipynb`는 보이스 서비스의 실제 application factory, `SplitPipelineRuntime`, provider adapter와 정책 model을 사용한다. notebook 안에 STT·LLM·TTS 구현이나 별도의 대화 처리 모듈을 만들지 않는다. 실행 당시 실제 runtime에 전달된 최종 대화 정책은 정책 스냅샷으로 로컬 평가 artifact에 저장한다.
 
 백엔드와 보이스 사이에는 REST 기반 세션 생성·종료·결과 전달 제어 API를 둔다. 모바일과 보이스 사이에는 WebSocket 기반 WebRTC 시그널링 채널과 WebRTC 기반 실제 음성 채널을 둔다.
 

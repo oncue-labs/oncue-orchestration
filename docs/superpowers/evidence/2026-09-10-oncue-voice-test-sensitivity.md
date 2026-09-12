@@ -1,7 +1,7 @@
 # 테스트 민감도 근거
 
 - **검증 행위:** 최종 STT 결과만 사용자 발화로 확정하고 대화 이벤트 순서를 사용자 발화 → assistant 응답으로 유지한다.
-- **운영 코드 위치:** `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/runtime.py`
+- **운영 코드 위치:** `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/split_pipeline_runtime.py`
 - **결함을 잡아야 하는 테스트:** `tests/unit/conversation/test_runtime.py::test_runtime_emits_user_and_assistant_events_for_evaluation`
 - **기준 명령과 결과:** `poetry run pytest tests/unit/conversation/test_runtime.py -q` → `5 passed`
 - **mutation:** `if segment.is_final`을 `if not segment.is_final`로 반전했다.

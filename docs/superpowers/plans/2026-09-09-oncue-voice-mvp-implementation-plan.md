@@ -39,14 +39,14 @@
 - 생성: `/Users/yeonny0723/orca/oncue-voice/Dockerfile`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/main.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/config.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/llm_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/stt_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/tts_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/models.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/factory.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/llm_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/stt_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/tts_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/models.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/factory.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/.gitignore`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/test_health.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/providers/test_provider_factory.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/providers/test_split_pipeline_provider_factory.py`
 
 **인터페이스:**
 - `LlmProvider#stream_reply(policy: DialoguePolicy, turns: AsyncIterator[UserTurn]): AsyncIterator[AssistantChunk]`
@@ -64,7 +64,7 @@
 
 - [x] **단계 2: 테스트 실행 및 실패 확인**
 
-실행: `poetry run pytest tests/unit/test_health.py tests/unit/providers/test_provider_factory.py -q`
+실행: `poetry run pytest tests/unit/test_health.py tests/unit/providers/test_split_pipeline_provider_factory.py -q`
 
 예상 결과: 패키지, factory, endpoint가 없으므로 실패한다.
 
@@ -74,28 +74,28 @@ provider별 SDK 타입이 밖으로 노출되지 않는 `ProviderSettings`, `Pro
 
 - [x] **단계 4: health와 factory 테스트 실행**
 
-실행: `poetry run pytest tests/unit/test_health.py tests/unit/providers/test_provider_factory.py -q`
+실행: `poetry run pytest tests/unit/test_health.py tests/unit/providers/test_split_pipeline_provider_factory.py -q`
 
 예상 결과: 통과한다.
 
 ### 작업 2: fake provider와 대화 정책·runtime 구현
 
 **파일:**
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_llm_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_stt_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_tts_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/fake_llm_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/fake_stt_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/fake_tts_provider.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/models.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/runtime.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/split_pipeline_runtime.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/events.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/providers/test_provider_contracts.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/conversation/test_runtime.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/providers/test_split_pipeline_provider_contracts.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/conversation/test_split_pipeline_runtime.py`
 
 **인터페이스:**
 - `DialoguePolicy`는 `role`, `stages`, `goal`, `allowedTopics`, `forbiddenTopics`, `terminationConditions`, `language`, `voiceId`, `instructions`, `dialogueRules`, `scenarioContext`, `voiceSettings`를 가진다.
 - `UserTurn`은 `text`, `createdAt`을 가진다. `AssistantChunk`는 `text`, `sequence`를 가진다. `TranscriptSegment`는 `text`, `isFinal`, `startMs`, `endMs`를 가진다.
-- `ConversationRuntime#run(session_id: str, policy: DialoguePolicy, audio: AsyncIterator[bytes]): AsyncIterator[bytes]`
-- `ConversationRuntime#stop(session_id: str, reason: str): None`
-- `ConversationRuntimeOptions`는 clock, 최대 통화 시간, 이벤트 sink를 주입한다.
+- `SplitPipelineRuntime#run(session_id: str, policy: DialoguePolicy, audio: AsyncIterator[bytes]): AsyncIterator[bytes]`
+- `SplitPipelineRuntime#stop(session_id: str, reason: str): None`
+- `SplitPipelineRuntimeOptions`는 clock, 최대 통화 시간, 이벤트 sink를 주입한다.
 - `ConversationEvent`는 사용자 발화와 assistant chunk를 관찰하기 위한 내부 이벤트다.
 
 - [x] **단계 1: provider contract와 runtime 실패 테스트 작성**
@@ -104,7 +104,7 @@ provider별 SDK 타입이 밖으로 노출되지 않는 `ProviderSettings`, `Pro
 
 - [x] **단계 2: 테스트 실행 및 실패 확인**
 
-실행: `poetry run pytest tests/unit/providers/test_provider_contracts.py tests/unit/conversation/test_runtime.py -q`
+실행: `poetry run pytest tests/unit/providers/test_split_pipeline_provider_contracts.py tests/unit/conversation/test_split_pipeline_runtime.py -q`
 
 예상 결과: fake provider, 정책 model, runtime이 없으므로 실패한다.
 
@@ -114,21 +114,21 @@ Pydantic model이 backend가 전달하는 camelCase 정책 JSON을 읽고 Python
 
 - [x] **단계 4: provider와 runtime 테스트 실행**
 
-실행: `poetry run pytest tests/unit/providers/test_provider_contracts.py tests/unit/conversation/test_runtime.py -q`
+실행: `poetry run pytest tests/unit/providers/test_split_pipeline_provider_contracts.py tests/unit/conversation/test_split_pipeline_runtime.py -q`
 
 예상 결과: 통과한다.
 
 ### 작업 3: OpenAI 분리형 Public provider adapter 구현
 
 **파일:**
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_llm_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_stt_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_tts_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/openai_llm_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/openai_stt_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/openai_tts_provider.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/docs/providers/openai.md`
 - 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/config.py`
-- 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/factory.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/errors.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/integration/providers/test_openai_provider_adapters.py`
+- 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/split_pipeline/factory.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/common/errors.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/integration/providers/test_openai_split_pipeline_adapters.py`
 
 **인터페이스:**
 - `OpenAiLlmProvider`, `OpenAiSttProvider`, `OpenAiTtsProvider`는 작업 1의 provider protocol을 각각 구현한다.
@@ -145,7 +145,7 @@ OpenAI STT·LLM·TTS 각각의 API 버전, streaming 방식, timeout, 데이터 
 
 - [x] **단계 3: 테스트 실행 및 실패 확인**
 
-실행: `poetry run pytest tests/integration/providers/test_openai_provider_adapters.py -q`
+실행: `poetry run pytest tests/integration/providers/test_openai_split_pipeline_adapters.py -q`
 
 예상 결과: 기준 Public adapter가 없으므로 실패한다.
 
@@ -155,7 +155,7 @@ provider별 직렬화와 오류 매핑은 각 adapter 안에 둔다. `ProviderFa
 
 - [x] **단계 5: mock adapter 테스트 실행**
 
-실행: `poetry run pytest tests/integration/providers/test_openai_provider_adapters.py -q`
+실행: `poetry run pytest tests/integration/providers/test_openai_split_pipeline_adapters.py -q`
 
 예상 결과: 통과한다.
 
@@ -164,9 +164,9 @@ provider별 직렬화와 오류 매핑은 각 adapter 안에 둔다. `ProviderFa
 기존 STT·LLM·TTS 분리형 adapter를 유지하면서, 음성을 텍스트로 확정하지 않아도 음성 입력과 음성 출력을 양방향으로 처리할 수 있는 별도 계약을 추가한다. 이 단계에서는 외부 네트워크 없이 실시간 세션의 송수신·종료·오류 변환을 검증한다.
 
 **파일:**
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime_models.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/fake_realtime_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime/provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime/models.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime/fake_provider.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/conversation/realtime_runtime.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/providers/test_realtime_provider_contract.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/unit/conversation/test_realtime_runtime.py`
@@ -205,9 +205,9 @@ Realtime event를 내부 모델로 정의하고 fake provider가 입력 오디�
 OpenAI Python SDK의 Realtime WebSocket 연결을 `RealtimeProvider` 계약으로 감싼다. OpenAI 고유 event object와 session 설정은 adapter 안에서만 다루며, 실제 통화 연결은 다음 작업의 WebRTC bridge에서 연결한다.
 
 **파일:**
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/openai_realtime_provider.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/realtime_service.py`
-- 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/factory.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime/openai_provider.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/realtime_evaluation_service.py`
+- 수정: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/providers/realtime/factory.py`
 - 수정: `/Users/yeonny0723/orca/oncue-voice/pyproject.toml`
 - 수정: `/Users/yeonny0723/orca/oncue-voice/docs/providers/openai.md`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/integration/providers/test_openai_realtime_provider.py`
@@ -247,14 +247,14 @@ SDK 연결과 event 변환을 adapter에 구현하고, provider 생성 함수가
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/realtime_persona_scenario_evaluation.ipynb`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/README.md`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/artifacts/.gitkeep`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/service.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/split_pipeline_evaluation_service.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/factories.py`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_evaluation_service.py`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_split_pipeline_evaluation_service.py`
 - 수정: `/Users/yeonny0723/orca/oncue-voice/.gitignore`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_evaluation_notebook.py`
 
 **인터페이스:**
-- 기존 `EvaluationService`는 `ProviderFactory#create`, `ConversationRuntime#run`, `DialoguePolicy`를 사용하고 분리형 pipeline notebook은 이 서비스만 호출한다.
+- 기존 `SplitPipelineEvaluationService`는 `ProviderFactory#create`, `SplitPipelineRuntime#run`, `DialoguePolicy`를 사용하고 분리형 pipeline notebook은 이 서비스만 호출한다.
 - `RealtimeEvaluationService`는 `RealtimeProvider`, `RealtimeRuntime`, `DialoguePolicy`를 사용하고 Realtime notebook은 이 서비스만 호출한다.
 - 실행 결과는 `run.json`, `policy-snapshot.json`, `provider-config.json`, `input.json`, `transcript.json`, `response.wav`, `evaluation.md`로 저장한다.
 - `policySnapshot`은 해당 실행의 variant가 적용된 최종 정책 전체를 저장한다. `policyVersion`을 요구하지 않는다.
@@ -393,7 +393,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 - [ ] **단계 3: aiortc 시그널링과 음성 track 구현**
 
-offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. WebRTC media track을 선택된 `ConversationRuntime` 또는 `RealtimeRuntime`의 오디오 입력·출력과 연결한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
+offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. WebRTC media track을 선택된 `SplitPipelineRuntime` 또는 `RealtimeRuntime`의 오디오 입력·출력과 연결한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
