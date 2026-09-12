@@ -120,7 +120,10 @@ Java 21, Spring Boot 3.2.3, Web, Validation, Security, JPA, Redis, Flyway, MySQL
 - 테스트: `src/test/java/com/oncue/auth/AuthServiceTest.java`
 
 **인터페이스:**
-- `IdentityProviderClient#resolve(String authorizationCode): ExternalIdentity`
+- `POST /api/v1/auth/login`
+- `LoginRequest`는 `provider`, `authorizationCode`, `codeVerifier`를 가진다. `codeVerifier`는 모바일이 PKCE 인증 시작 시 생성한 값이며 provider 토큰 교환에만 사용한다.
+- `LoginResponse`는 `accessToken`, `expiresAt`, `createdAt`을 가진다.
+- `IdentityProviderClient#resolve(String authorizationCode, String codeVerifier): ExternalIdentity`
 - `AuthService#login(LoginRequest): LoginResponse`
 - `AccessTokenService#issue(User): AccessToken`
 
@@ -136,7 +139,7 @@ Java 21, Spring Boot 3.2.3, Web, Validation, Security, JPA, Redis, Flyway, MySQL
 
 - [ ] **단계 3: auth 서비스와 provider 경계 구현**
 
-Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그인 시 사용자를 생성하며 백엔드 access token을 발급한다. provider별 HTTP 응답 파싱은 각 `identity_provider` client 안에 둔다.
+Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그인 시 사용자를 생성하며 백엔드 access token을 발급한다. provider별 HTTP 응답 파싱은 각 `identity_provider` client 안에 둔다. 인증 코드 교환 요청에는 `authorizationCode`와 `codeVerifier`를 함께 사용한다.
 
 - [ ] **단계 4: controller와 보안 필터 추가**
 
@@ -260,6 +263,8 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 - `CallSessionService#prepare(ReservationId): CallSession`
 - `CallSessionService#reject(UserId, CallSessionId): CallSession`
 - `CallSessionService#applyResult(CallResult): void`
+- `CreateVoiceSessionRequest`는 `callSessionId`, `userId`, `policySnapshot`, `expiresAt`을 가진다. `policySnapshot`은 백엔드가 해당 세션에 사용할 최종 대화 정책 전체다.
+- 거절 API 성공 응답은 `callSessionId`, `callStatus`, `callOutcome`, `createdAt`, `endedAt`을 반환한다.
 
 - [ ] **단계 1: 상태 전이 테스트 작성**
 

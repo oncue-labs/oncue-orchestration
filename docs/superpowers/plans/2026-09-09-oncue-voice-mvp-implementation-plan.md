@@ -305,7 +305,7 @@ notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표
 - `callSessionId`는 백엔드와 모바일이 공유하는 통화 식별자이며, `voiceSessionId`는 보이스 서버가 생성하는 내부 식별자다.
 - `SessionService#create(request: CreateSessionRequest): VoiceSession`
 - `SessionService#close(voice_session_id: str, reason: str): None`
-- `CreateSessionRequest`는 `callSessionId`, `userId`, `policy`, `expiresAt`을 가진다. `expiresAt`은 준비된 보이스 세션을 정리할 만료 시각이며 연결 시작 시각이나 연결 토큰의 만료 시각이 아니다. `VoiceSession`은 `voiceSessionId`, `callSessionId`, `userId`, `policy`, `expiresAt`, `status`, `createdAt`을 가진다.
+- `CreateSessionRequest`는 `callSessionId`, `userId`, `policySnapshot`, `expiresAt`을 가진다. `expiresAt`은 준비된 보이스 세션을 정리할 만료 시각이며 연결 시작 시각이나 연결 토큰의 만료 시각이 아니다. `VoiceSession`은 `voiceSessionId`, `callSessionId`, `userId`, `policySnapshot`, `expiresAt`, `status`, `createdAt`을 가진다.
 
 - [x] **단계 1: 토큰 검증 테스트 작성**
 
@@ -376,6 +376,8 @@ notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표
 - `SdpOffer`와 `SdpAnswer`는 WebRTC 연결 방법을 설명하는 SDP 문자열을 `sdp` 필드로 가진다.
 - `IceCandidate`는 `candidate`, `sdpMid`, `sdpMLineIndex`를 가진다.
 - `HangupMessage`는 사용자가 정상 종료했음을 알리는 `{"type":"hangup"}` 제어 메시지다.
+- answer envelope는 `{"type":"answer","payload":{"sdp":"..."}}`로 offer와 대칭을 이룬다.
+- 모바일은 백엔드 응답의 `iceServers`를 사용하고, 보이스 서버는 온큐가 운영하는 coturn의 주소·자격 정보를 환경 변수 또는 Docker Secret으로 읽는다. `/internal/v1/voice-sessions` 요청에는 ICE 설정을 추가하지 않는다.
 - `WebRtcSession#accept_offer(offer: SdpOffer): SdpAnswer`
 - `WebRtcSession#close(): None`
 
@@ -393,7 +395,7 @@ notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표
 
 - [ ] **단계 3: aiortc 시그널링과 음성 track 구현**
 
-offer를 받기 전에 연결 토큰을 검증한다. 세션 요청에서 ICE 서버를 구성하고, 백엔드가 제공한 STUN/TURN 자격 정보를 사용하며, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. WebRTC media track을 선택된 `SplitPipelineRuntime` 또는 `RealtimeRuntime`의 오디오 입력·출력과 연결한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
+offer를 받기 전에 연결 토큰을 검증한다. 보이스 서버는 환경 변수 또는 Docker Secret에서 온큐가 운영하는 coturn 설정을 읽고, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. WebRTC media track을 선택된 `SplitPipelineRuntime` 또는 `RealtimeRuntime`의 오디오 입력·출력과 연결한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 

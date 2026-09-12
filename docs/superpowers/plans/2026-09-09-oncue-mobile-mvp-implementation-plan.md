@@ -77,7 +77,7 @@ Dart 공통 계약이 수신 전화를 OS에 등록하고, answer/reject/end 이
 - 테스트: `test/auth/application/auth_service_test.dart`
 
 **인터페이스:**
-- `AuthApiClient.login(String provider, String authorizationCode): Future<AuthSession>`
+- `AuthApiClient.login(String provider, String authorizationCode, String codeVerifier): Future<AuthSession>`
 - `ApiClient.request<T>(ApiRequest<T> request): Future<T>`
 - `AuthService.loginWithKakao(): Future<void>`
 - `AuthService.loginWithX(): Future<void>`
@@ -94,7 +94,7 @@ Kakao/X 로그인 성공, access token 저장, 만료 token 처리, 401 logout, 
 
 - [ ] **단계 3: provider 공통 인증과 API transport 구현**
 
-Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access token을 `Authorization: Bearer`에 넣고 보이스 시그널링 요청에는 넣지 않는다.
+Kakao/X provider 세부 사항은 auth adapter 안에 둔다. OAuth 인증 시작 시 생성한 PKCE `codeVerifier`를 인증 코드와 함께 백엔드 로그인 API에 전달한다. 백엔드 access token을 `Authorization: Bearer`에 넣고 보이스 시그널링 요청에는 넣지 않는다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
@@ -198,7 +198,7 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 
 **인터페이스:**
 - `IncomingCallService.handleVoipPayload(Map<String, dynamic>): Future<void>`
-- Push payload에는 `callSessionId`와 시스템 수신 화면에 표시할 안전한 `displayName`만 넣고 컨텍스트, 목표, 장기 token은 넣지 않는다.
+- Push payload에는 `callSessionId`와 시스템 수신 화면에 표시할 안전한 `displayName`만 넣는다. 사용자 `scenarioContext`·`callGoal`, 백엔드 `accessToken`, WebRTC `connectionToken`은 넣지 않는다. 앱은 사용자가 전화를 받은 뒤 백엔드 access token으로 connection token을 요청한다.
 
 - [ ] **단계 1: 수신 전화 서비스 테스트 작성**
 
@@ -241,6 +241,7 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. 백엔드 access t
 - `VoiceCallService.end(String callSessionId): Future<void>`
 - `WebRtcClient.connect(ConnectionToken token): Future<void>`는 token의 `signalingUrl`과 `iceServers`를 사용해 WebSocket 시그널링 후 WebRTC 음성 연결을 시작한다.
 - `WebRtcClient.close(String reason): Future<void>`
+- 거절 API 응답은 `callSessionId`, `callStatus`, `callOutcome`, `createdAt`, `endedAt`을 사용한다.
 
 - [ ] **단계 1: 연결 흐름 테스트 작성**
 

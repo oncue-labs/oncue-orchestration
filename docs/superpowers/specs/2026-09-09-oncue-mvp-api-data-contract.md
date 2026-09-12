@@ -22,6 +22,34 @@
 
 사용자 로그인 access token을 `Authorization: Bearer {token}`으로 전달한다.
 
+로그인은 다음 endpoint를 사용한다.
+
+```text
+POST /api/v1/auth/login
+```
+
+요청:
+
+```json
+{
+  "provider": "kakao",
+  "authorizationCode": "...",
+  "codeVerifier": "..."
+}
+```
+
+`provider`는 `kakao` 또는 `x`만 허용한다. 모바일은 OAuth 인증을 시작할 때 PKCE `code_challenge`를 사용하고, 인증 코드를 백엔드에 전달할 때 그에 대응하는 단기 `codeVerifier`도 함께 전달한다. 백엔드는 provider 토큰 교환 시 인증 코드와 `codeVerifier`를 함께 사용한다. `codeVerifier`는 장기 access token이나 사용자 식별자가 아니다.
+
+응답:
+
+```json
+{
+  "accessToken": "...",
+  "expiresAt": "2026-09-08T13:00:00Z",
+  "createdAt": "2026-09-08T12:00:00Z"
+}
+```
+
 ### 백엔드 → 보이스 서버
 
 서비스 간 인증 토큰을 사용한다. 보이스 서버는 백엔드가 보낸 요청인지 확인한 뒤 세션 생성과 통화 결과 전달을 처리한다.
@@ -128,6 +156,18 @@ POST /api/v1/call-sessions/{callSessionId}/reject
 
 이미 최종 결과가 저장된 경우에는 현재 결과를 그대로 반환하는 멱등 동작을 사용한다. `CONNECTING` 이후 거절 요청처럼 현재 상태와 맞지 않는 요청은 상태를 임의로 되돌리지 않고 충돌로 처리한다.
 
+성공 응답:
+
+```json
+{
+  "callSessionId": 12345,
+  "callStatus": "RINGING",
+  "callOutcome": "FAILED",
+  "createdAt": "2026-09-08T12:00:00Z",
+  "endedAt": "2026-09-08T12:01:00Z"
+}
+```
+
 ### 백엔드 → 보이스 서버: 세션 준비
 
 ```text
@@ -155,6 +195,8 @@ POST /api/v1/call-sessions/{callSessionId}/connection-token
 ```
 
 백엔드는 세션과 사용자 소유권을 확인한 뒤 1회성 연결 토큰, 보이스 WebSocket 주소와 WebRTC 연결에 필요한 STUN/TURN 정보를 반환한다.
+
+여기서 `iceServers`는 휴대폰이 WebRTC 연결 경로를 찾을 때 사용하는 설정이다. 운영 환경에서는 온큐가 직접 운영하는 coturn을 사용한다. 휴대폰은 백엔드 응답의 `iceServers`를 사용하고, 보이스 서버는 같은 coturn의 주소·자격 정보를 환경 변수 또는 Docker Secret으로 읽는다. 보이스 세션 생성 요청에 ICE 설정을 추가하지 않는다.
 
 ```json
 {
@@ -188,6 +230,13 @@ WebSocket 연결 시 `Authorization: Bearer {connectionToken}`을 사용한다. 
 ```json
 {
   "type": "offer",
+  "payload": { "sdp": "v=0..." }
+}
+```
+
+```json
+{
+  "type": "answer",
   "payload": { "sdp": "v=0..." }
 }
 ```
@@ -314,9 +363,9 @@ dialogueRules
 
 `oncue-voice`의 Jupyter notebook은 운영 API가 아니라 개발용 평가 도구다. notebook은 runtime에 전달한 최종 대화 정책 전체를 `policySnapshot`으로 로컬 artifact에 저장한다. 정책 버전 번호나 운영 정책 이력 테이블은 만들지 않는다.
 
-정책 snapshot에는 페르소나·시나리오 지시사항과 규칙, 공통 안전 정책, 사용자 시나리오 컨텍스트와 통화 목표, 언어, voice 식별자·설정, 평가 variant가 적용된 최종값을 포함한다. notebook에서 변경한 정책·voice 설정은 운영 예약 API나 사용자 기능으로 노출하지 않는다.
+정책 snapshot에는 페르소나·시나리오 지시사항과 규칙, 공통 안전 정책, 사용자 시나리오 컨텍스트와 통화 목표, 언어, voice 식별자·설정, 해당 실행 설정이 적용된 최종값을 포함한다. notebook에서 변경한 정책·voice 설정은 운영 예약 API나 사용자 기능으로 노출하지 않는다.
 
-정책 snapshot과 생성된 음성·대화 텍스트는 합성 테스트 데이터에 한해 `oncue-voice/notebooks/artifacts/`에 로컬 저장할 수 있다. 운영 API·운영 DB·운영 로그에는 저장하지 않는다.
+정책 snapshot과 생성된 음성·대화 텍스트는 합성 테스트 데이터에 한해 `oncue-voice/notebooks/evaluations/<combinationKey>/<runId>/`에 로컬 저장할 수 있다. 입력은 `input/`, 실행 결과는 `artifacts/` 아래에 저장한다. 운영 API·운영 DB·운영 로그에는 저장하지 않는다.
 
 ## 8. DB 테이블
 
