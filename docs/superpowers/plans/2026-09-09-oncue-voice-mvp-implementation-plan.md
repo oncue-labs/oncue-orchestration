@@ -321,7 +321,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 백엔드 공개키로 서명된 RS256 토큰을 검증한다. `voice:connect` scope, call session ID, 필요 시 user ID를 확인하고, 사용한 `jti`는 토큰 TTL 동안 Redis에 원자적으로 저장한다. 보이스 세션 준비 데이터는 Redis에 보관하며, token secret과 credential은 로그에 남기지 않는다.
 
-- [ ] **단계 4: 테스트 실행 및 통과 확인**
+- [x] **단계 4: 테스트 실행 및 통과 확인**
 
 실행: `poetry run pytest tests/unit/session -q`
 
@@ -342,17 +342,17 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 - `VoiceCallResultCallbackClient#sendResult(call_session_id: str, result: CallResult): None`가 백엔드의 `POST /internal/v1/call-sessions/{callSessionId}/result`를 호출한다.
 - `CallResult`는 `voiceSessionId`, `callStatus`, `callOutcome`, `startedAt`, `endedAt`을 가진다.
 
-- [ ] **단계 1: 세션 생성·종료 API 테스트 작성**
+- [x] **단계 1: 세션 생성·종료 API 테스트 작성**
 
 서비스 간 인증, 필수 대화 정책 필드, 중복 세션 생성의 멱등성, 종료된 세션 처리를 검증한다. 최종 결과에 `callStatus`와 `callOutcome`을 담을 수 있는 schema도 검증한다.
 
-- [ ] **단계 2: API 테스트 실행 및 실패 확인**
+- [x] **단계 2: API 테스트 실행 및 실패 확인**
 
 실행: `poetry run pytest tests/unit/api/test_session_api.py -q`
 
 예상 결과: route가 없으므로 실패한다.
 
-- [ ] **단계 3: 내부 제어 route와 callback client 구현**
+- [x] **단계 3: 내부 제어 route와 callback client 구현**
 
 백엔드 요청에는 별도의 서비스 자격 증명을 사용한다. 모바일 사용자 access token은 내부 route에서 받지 않는다. 세션 생성 시에는 정책과 만료 시각을 저장할 뿐 실제 분리형 또는 Realtime provider 연결을 열지 않는다. 사용자가 WebRTC 연결을 완료한 뒤 실제 runtime과 선택된 provider를 시작한다. 최종 결과는 타입이 지정된 callback client로 보내고 `callSessionId` 기준 중복 결과를 안전하게 처리한다.
 
