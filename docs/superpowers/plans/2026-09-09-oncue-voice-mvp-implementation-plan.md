@@ -383,21 +383,21 @@ notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표
 
 > 읽기 메모: SDP는 실제 음성이 아니라 연결 설명서다. ICE candidate는 가능한 네트워크 경로 후보이며, 이 정보들을 WebSocket으로 교환한 뒤 실제 음성은 WebRTC로 전달한다.
 
-- [ ] **단계 1: 시그널링 테스트 작성**
+- [x] **단계 1: 시그널링 테스트 작성**
 
 유효한 연결 토큰, 잘못된 토큰, 모르는 세션, 잘못된 SDP, offer 수락, ICE candidate 교환, `hangup` 정상 종료와 비정상 연결 끊김을 테스트한다. 단위 테스트에서는 fake peer connection을 사용한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
 실행: `poetry run pytest tests/unit/media tests/integration/test_webrtc_signaling.py -q`
 
 예상 결과: 시그널링과 미디어 모듈이 없으므로 실패한다.
 
-- [ ] **단계 3: aiortc 시그널링과 음성 track 구현**
+- [x] **단계 3: aiortc 시그널링과 음성 track 구현**
 
 offer를 받기 전에 연결 토큰을 검증한다. 보이스 서버는 환경 변수 또는 Docker Secret에서 온큐가 운영하는 coturn 설정을 읽고, SDP나 오디오 내용을 로그에 남기지 않는다. WebSocket은 시그널링과 `hangup` 같은 제어 메시지에만 사용하고 오디오는 WebRTC media track으로 전달한다. WebRTC media track을 선택된 `SplitPipelineRuntime` 또는 `RealtimeRuntime`의 오디오 입력·출력과 연결한다. `hangup`을 받은 뒤 연결이 닫히면 사용자 종료로 처리하고, `hangup` 없이 끊기거나 provider·시나리오·시간 제한에 따른 종료는 구분해 최종 `callOutcome`을 백엔드에 전달한다.
 
-- [ ] **단계 4: 테스트 실행 및 통과 확인**
+- [x] **단계 4: 테스트 실행 및 통과 확인**
 
 실행: `poetry run pytest tests/unit/media tests/integration/test_webrtc_signaling.py -q`
 
@@ -415,17 +415,17 @@ offer를 받기 전에 연결 토큰을 검증한다. 보이스 서버는 환경
 **인터페이스:**
 - 오케스트레이션 Compose가 사용하는 coturn 참고 설정을 제공한다. TURN 설정을 `oncue-orchestration`에 두지 않는다.
 
-- [ ] **단계 1: 세션부터 오디오까지 통합 테스트 작성**
+- [x] **단계 1: 세션부터 오디오까지 통합 테스트 작성**
 
 fake provider로 세션을 만들고 offer를 인증하며 테스트 오디오 track을 교환한다. 분리형 runtime과 Realtime runtime 각각의 출력 track과 최종 결과 callback을 확인하고 운영 저장소에 오디오가 저장되지 않는지 검증한다.
 
-- [ ] **단계 2: 통합 테스트 실행 및 실패 확인**
+- [x] **단계 2: 통합 테스트 실행 및 실패 확인**
 
 실행: `poetry run pytest tests/integration/test_session_to_audio.py -q`
 
 예상 결과: 세션, 시그널링, 미디어, runtime 연결 전이므로 실패한다.
 
-- [ ] **단계 3: coturn 참고 설정과 컨테이너 검사 추가**
+- [x] **단계 3: coturn 참고 설정과 컨테이너 검사 추가**
 
 realm, 외부 주소, 자격 정보, 포트는 환경 변수에서 받는다. `coturn.conf`에 비밀값을 넣지 않고 README에 필요한 변수를 기록한다.
 
@@ -433,4 +433,4 @@ realm, 외부 주소, 자격 정보, 포트는 환경 변수에서 받는다. `c
 
 실행: `poetry run pytest` 및 `docker build -t oncue-voice:test .`
 
-예상 결과: 테스트가 통과하고 이미지가 빌드된다.
+검증 결과: 하위 세션에서 전체 테스트 92개와 Poetry 검증은 통과했다. 현재 실행 환경에 Docker CLI/daemon이 없어 이미지 build는 실행하지 못했으므로 컨테이너 검증은 남겨 둔다.
