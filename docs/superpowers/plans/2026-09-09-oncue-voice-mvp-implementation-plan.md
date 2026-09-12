@@ -24,7 +24,7 @@
 - 모바일 연결 토큰을 독립적으로 검증하고 토큰 비밀값을 로그에 남기지 않는다.
 - JSON에는 `createdAt`을 사용하고 시간은 UTC로 처리한다.
 - 음성, 운영 통화 대화 텍스트, 장기 사용자 데이터를 운영 환경에 저장하지 않는다.
-- Jupyter 평가 결과는 합성 테스트 데이터에 한해 `notebooks/artifacts/`에 로컬 저장하고 Git에서 제외한다.
+- Jupyter 평가 결과는 합성 테스트 데이터에 한해 `notebooks/evaluations/`에 로컬 저장하고 Git에서 제외한다.
 - 평가 실행 당시 runtime에 전달한 최종 대화 정책 전체를 `policySnapshot`으로 저장하며, 정책 버전 번호를 사용하지 않는다.
 - 60초 수신 대기와 300초 최대 통화 시간을 적용한다.
 - 외부 전화번호 발신, 음성 복제, 반복 통화, 사용자 페르소나 생성은 추가하지 않는다.
@@ -240,13 +240,13 @@ SDK 연결과 event 변환을 adapter에 구현하고, provider 생성 함수가
 
 예상 결과: 통과한다.
 
-### 작업 4: Jupyter 기반 음성·대화 품질 평가와 A/B 실행 구현
+### 작업 4: Jupyter 기반 음성·대화 품질 평가와 실행 설정 비교 구현
 
 **파일:**
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/voice_persona_scenario_evaluation.ipynb`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/realtime_persona_scenario_evaluation.ipynb`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/README.md`
-- 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/artifacts/.gitkeep`
+- 생성: `/Users/yeonny0723/orca/oncue-voice/notebooks/evaluations/.gitkeep`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/split_pipeline_evaluation_service.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/src/oncue_voice/evaluation/factories.py`
 - 생성: `/Users/yeonny0723/orca/oncue-voice/tests/evaluation/test_split_pipeline_evaluation_service.py`
@@ -256,8 +256,8 @@ SDK 연결과 event 변환을 adapter에 구현하고, provider 생성 함수가
 **인터페이스:**
 - 기존 `SplitPipelineEvaluationService`는 `ProviderFactory#create`, `SplitPipelineRuntime#run`, `DialoguePolicy`를 사용하고 분리형 pipeline notebook은 이 서비스만 호출한다.
 - `RealtimeEvaluationService`는 `RealtimeProvider`, `RealtimeRuntime`, `DialoguePolicy`를 사용하고 Realtime notebook은 이 서비스만 호출한다.
-- 실행 결과는 `run.json`, `policy-snapshot.json`, `provider-config.json`, `input.json`, `transcript.json`, `response.wav`, `evaluation.md`로 저장한다.
-- `policySnapshot`은 해당 실행의 variant가 적용된 최종 정책 전체를 저장한다. `policyVersion`을 요구하지 않는다.
+- 실행 결과는 `evaluations/<combinationKey>/<runId>/input/`과 `evaluations/<combinationKey>/<runId>/artifacts/`로 나누어 저장한다.
+- `policySnapshot`은 해당 실행에 적용된 최종 정책 전체를 저장한다. `policyVersion`이나 variant 식별자를 요구하지 않는다.
 
 - [x] **단계 1: fake provider를 사용하는 notebook 실행 테스트 작성**
 
@@ -271,11 +271,11 @@ notebook이 fake provider로 실행되고, 네 가지 MVP 통화 조합의 합�
 
 - [x] **단계 3: 서비스 코드만 사용하는 notebook 작성**
 
-notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람이 입력하는 1~5점과 코멘트만 담당한다. STT·LLM·TTS 구현과 별도 대화 loop를 notebook에 작성하지 않는다. 동일한 입력으로 한 번에 하나의 주요 변수만 바꾸고, 정책을 바꾼 실행은 각각의 `policySnapshot`을 저장한다.
+notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표시, 사람이 입력하는 1~5점과 코멘트만 담당한다. STT·LLM·TTS 구현과 별도 대화 loop를 notebook에 작성하지 않는다. 설정값을 바꿔 다시 실행할 때마다 통화 조합 아래에 다음 `runId`를 생성하고, 각 실행의 `policySnapshot`을 저장한다.
 
 - [x] **단계 4: 로컬 artifact와 개인정보 제한 추가**
 
-`notebooks/artifacts/`를 Git에서 제외한다. 합성 테스트 데이터만 사용하고 실제 이름·전화번호·가족 정보·계정 정보·실제 인물의 음성을 사용하지 않는다. provider 설정에는 API key, token, password를 저장하지 않는다.
+`notebooks/evaluations/`를 Git에서 제외한다. 합성 테스트 데이터만 사용하고 실제 이름·전화번호·가족 정보·계정 정보·실제 인물의 음성을 사용하지 않는다. provider 설정에는 API key, token, password를 저장하지 않는다.
 
 - [x] **단계 5: notebook fake 실행 검증**
 
@@ -283,7 +283,7 @@ notebook은 테스트 케이스, variant, 실행 요청, 결과 표시, 사람�
 
 예상 결과: fake provider로 notebook이 재현 가능하게 실행되고 artifact가 생성된다.
 
-- [ ] **단계 6: 분리형·Realtime Public provider A/B 수동 평가 실행**
+- [ ] **단계 6: 분리형·Realtime Public provider 실행 회차 수동 평가**
 
 실행: `poetry run jupyter lab notebooks/voice_persona_scenario_evaluation.ipynb`
 

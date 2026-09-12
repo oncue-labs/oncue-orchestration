@@ -99,7 +99,7 @@ RealtimeSession#close() -> None
 
 Realtime 모델은 음성을 텍스트로 바꾸어야만 응답하는 분리형 pipeline이 아니다. 따라서 `transcript_completed`가 오기 전에도 모델이 음성 입력을 처리할 수 있으며, 평가용 transcript는 응답 생성의 필수 입력으로 취급하지 않는다.
 
-### 4.3 A/B 비교는 한 Public provider의 두 경로에서 먼저 수행한다
+### 4.3 비교는 한 Public provider의 두 경로에서 먼저 수행한다
 
 초기 비교에서는 provider 자체를 바꾸지 않고 다음 항목을 비교한다.
 
@@ -129,7 +129,7 @@ oncue-voice/notebooks/realtime_persona_scenario_evaluation.ipynb
 
 기존 notebook은 분리형 pipeline을 평가하고, Realtime notebook은 Realtime provider를 평가한다. notebook 안에는 provider 구현이나 별도 대화 로직을 선언하지 않는다. `oncue-voice`가 제공하는 평가 service, runtime, provider interface, policy model과 실제 adapter를 사용한다.
 
-notebook의 책임은 테스트 케이스와 variant 선택, 실행 요청, 결과 표시, 수동 평가 기록뿐이다. 서비스 코드를 notebook에서 실행할 수 있도록 필요한 조립 진입점은 `oncue-voice` 코드에 둔다.
+notebook의 책임은 테스트 케이스와 실행 설정 선택, 실행 요청, 결과 표시, 수동 평가 기록뿐이다. 서비스 코드를 notebook에서 실행할 수 있도록 필요한 조립 진입점은 `oncue-voice` 코드에 둔다.
 
 ### 4.5 평가 결과는 정책 snapshot으로 재현한다
 
@@ -144,7 +144,7 @@ notebook의 책임은 테스트 케이스와 variant 선택, 실행 요청, 결�
 - 통화 목표
 - 언어
 - voice 식별자와 voice 관련 설정
-- 실행 variant가 적용된 최종 정책 값
+- 실행 설정이 적용된 최종 정책 값
 
 정책 비교를 위한 `policyHash`는 보조적으로 저장할 수 있지만, snapshot을 대신하지 않는다.
 
@@ -155,7 +155,7 @@ notebook의 책임은 테스트 케이스와 variant 선택, 실행 요청, 결�
         ↓
 페르소나·시나리오 정책 구성
         ↓
-실행 variant 적용
+실행 설정 적용
         ↓
 oncue-voice application factory
         ↓
@@ -175,11 +175,12 @@ oncue-voice application factory
 
 두 방식 모두 실제 `oncue-voice` runtime과 adapter를 사용하며, notebook이 별도 처리 로직을 갖지 않는다.
 
-## 6. A/B 테스트 규칙
+## 6. 실행 설정 비교 규칙
 
 - 동일한 테스트 케이스와 사용자 입력을 사용한다.
 - 한 번에 하나의 주요 변수만 변경한다.
-- variant A와 B의 실행 결과를 각각 저장한다.
+- 설정값을 바꿀 때마다 새로운 `run-001`, `run-002` 회차를 생성한다.
+- 각 회차의 `provider-config.json`과 `policy-snapshot.json`을 비교한다.
 - Public provider의 모델명과 API 설정을 기록한다.
 - 평가 경로(`split_pipeline` 또는 `realtime`)를 기록한다.
 - provider 응답의 비결정성은 숨기지 않고 실행 metadata에 기록한다.
@@ -195,7 +196,7 @@ oncue-voice application factory
 
 ## 7. 수동 평가 기준
 
-각 항목은 1~5점과 코멘트로 기록한다. 안전 항목은 점수와 별도로 위반 여부를 기록하며, 중대한 안전 위반이 있으면 해당 variant는 품질이 좋아도 통과시키지 않는다.
+각 항목은 1~5점과 코멘트로 기록한다. 안전 항목은 점수와 별도로 위반 여부를 기록하며, 중대한 안전 위반이 있으면 해당 회차는 품질이 좋아도 통과시키지 않는다.
 
 ### 음성·말투
 
@@ -224,20 +225,23 @@ oncue-voice application factory
 
 ## 8. 로컬 평가 artifact
 
-실행 결과는 `oncue-voice/notebooks/artifacts/` 아래에 저장한다. 이 경로는 `.gitignore`에 추가한다.
+실행 결과는 `oncue-voice/notebooks/evaluations/` 아래에 저장한다. 이 경로는 `.gitignore`에 추가한다.
 
 ```text
-artifacts/<runId>/<variantId>/
-├── run.json
-├── policy-snapshot.json
-├── provider-config.json
-├── input.json
-├── transcript.json
-├── response.wav
-└── evaluation.md
+evaluations/<combinationKey>/<runId>/
+├── input/
+│   ├── input.json
+│   └── input.wav 또는 input.pcm
+└── artifacts/
+    ├── run.json
+    ├── policy-snapshot.json
+    ├── provider-config.json
+    ├── transcript.json
+    ├── response.wav
+    └── evaluation.md
 ```
 
-`run.json`에는 실행 시각, variant 식별자, `oncue-voice` Git commit, provider와 모델 식별자, 실행 성공 여부와 지연 시간을 저장한다. `provider-config.json`에는 재현에 필요한 설정을 저장하되 API key, token, password 같은 비밀값은 저장하지 않는다.
+`run.json`에는 실행 시각, `runId`, 통화 조합, `oncue-voice` Git commit, provider와 모델 식별자, 실행 성공 여부와 지연 시간을 저장한다. `provider-config.json`에는 재현에 필요한 설정을 저장하되 API key, token, password 같은 비밀값은 저장하지 않는다.
 
 평가 입력은 합성 데이터만 사용한다. 실제 이름·전화번호·가족 정보·계정 정보·실제 인물의 음성을 사용하지 않는다. 생성된 음성과 대화 텍스트는 노트북을 실행한 로컬 환경에서만 평가하고 운영 API, 운영 DB, 운영 로그로 보내지 않는다.
 
