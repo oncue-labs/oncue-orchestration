@@ -300,9 +300,9 @@ notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표
 - 생성: `tests/unit/session/test_service.py`
 
 **인터페이스:**
-- `ConnectionTokenVerifier#verify(token: str, call_session_id: str, user_id: str | None): ConnectionClaims`
+- `ConnectionTokenVerifier#verify(token: str, call_session_id: int, user_id: int | None): ConnectionClaims`
 - `ConnectionClaims`는 `callSessionId`, `userId`, `exp`, `jti`, `iat`, `scope`를 가진다.
-- `callSessionId`는 백엔드와 모바일이 공유하는 통화 식별자이며, `voiceSessionId`는 보이스 서버가 생성하는 내부 식별자다.
+- `callSessionId`와 `userId`는 백엔드·보이스·모바일 사이에서 JSON 숫자로 공유하는 식별자이며, `voiceSessionId`는 보이스 서버가 생성하는 문자열 UUID다.
 - `SessionService#create(request: CreateSessionRequest): VoiceSession`
 - `SessionService#close(voice_session_id: str, reason: str): None`
 - `CreateSessionRequest`는 `callSessionId`, `userId`, `policySnapshot`, `expiresAt`을 가진다. `expiresAt`은 준비된 보이스 세션을 정리할 만료 시각이며 연결 시작 시각이나 연결 토큰의 만료 시각이 아니다. `VoiceSession`은 `voiceSessionId`, `callSessionId`, `userId`, `policySnapshot`, `expiresAt`, `status`, `createdAt`을 가진다.
@@ -339,7 +339,7 @@ notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표
 **인터페이스:**
 - `POST /internal/v1/voice-sessions`
 - `POST /internal/v1/voice-sessions/{voiceSessionId}/terminate`
-- `VoiceCallResultCallbackClient#sendResult(call_session_id: str, result: CallResult): None`가 백엔드의 `POST /internal/v1/call-sessions/{callSessionId}/result`를 호출한다.
+- `VoiceCallResultCallbackClient#sendResult(call_session_id: int, result: CallResult): None`가 백엔드의 `POST /internal/v1/call-sessions/{callSessionId}/result`를 호출한다.
 - `CallResult`는 `voiceSessionId`, `callStatus`, `callOutcome`, `startedAt`, `endedAt`을 가진다.
 
 - [x] **단계 1: 세션 생성·종료 API 테스트 작성**

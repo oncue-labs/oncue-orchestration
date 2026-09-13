@@ -282,6 +282,8 @@ POST /internal/v1/call-sessions/{callSessionId}/result
 
 `callSessionId`를 기준으로 최종 결과를 한 번만 반영한다. 같은 결과가 다시 오면 현재 값을 유지하고 성공 응답하며, 이미 종료된 세션에 다른 결과가 오면 상태를 바꾸지 않고 로그에 기록한다.
 
+> 계약 메모: `callSessionId`와 `userId`는 DB의 `BIGINT UNSIGNED AUTO_INCREMENT` 값에 대응하는 JSON 숫자다. `voiceSessionId`만 보이스 서버가 생성하는 문자열 UUID다.
+
 ## 6. 상태 모델
 
 ### 예약 상태
