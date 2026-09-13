@@ -319,7 +319,7 @@ notebook은 테스트 케이스, 현재 실행 설정, 실행 요청, 결과 표
 
 - [x] **단계 3: 검증과 짧은 기술 상태 구현**
 
-백엔드 공개키로 서명된 RS256 토큰을 검증한다. `voice:connect` scope, call session ID, 필요 시 user ID를 확인하고, 사용한 `jti`는 토큰 TTL 동안 Redis에 원자적으로 저장한다. 보이스 세션 준비 데이터는 Redis에 보관하며, token secret과 credential은 로그에 남기지 않는다.
+백엔드 개인키로 서명된 RS256 토큰을 보이스 공개키로 검증한다. `voice:connect` scope, call session ID, 필요 시 user ID를 확인하고, 사용한 `jti`는 토큰 TTL 동안 Redis에 원자적으로 저장한다. 보이스 세션 준비 데이터는 Redis에 보관하며, token secret과 credential은 로그에 남기지 않는다.
 
 - [x] **단계 4: 테스트 실행 및 통과 확인**
 

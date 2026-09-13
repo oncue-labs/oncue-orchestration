@@ -217,6 +217,8 @@ POST /api/v1/call-sessions/{callSessionId}/connection-token
 
 연결 토큰의 핵심 claim은 `callSessionId`, `userId`, `scope`, `jti`, `iat`, `exp`다. `scope`는 현재 `voice:connect` 하나만 허용한다. `jti`는 1회 사용 확인, `iat`는 발급 시각, `exp`는 만료 시각이다.
 
+연결 토큰은 백엔드의 RSA 개인키로 `RS256` 서명하고, 보이스 서버가 대응하는 공개키로 검증한다. 이 RSA 키 쌍은 사용자 로그인 access token에 사용하는 HMAC secret과 분리한다. 보이스 서버에는 개인키를 전달하지 않는다.
+
 ### 모바일 ↔ 보이스 서버: WebRTC 시그널링
 
 ```text

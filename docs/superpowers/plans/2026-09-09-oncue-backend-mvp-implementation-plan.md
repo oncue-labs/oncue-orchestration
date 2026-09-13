@@ -324,7 +324,7 @@ JDK 21 기준 전체 테스트가 통과했다. 스케줄러, 보이스 HTTP 어
 
 - [x] **단계 3: 서명된 연결 토큰 구현**
 
-백엔드 서명키로 발급 후 1분 만료의 토큰을 서명한다. signaling URL, 토큰, `createdAt`, `expiresAt`, ICE 서버 자격 정보를 반환한다. 모바일 access token은 보이스 서버 요청에 넣지 않는다. 현재 구현은 `ONCUE_VOICE_SIGNALING_URL`, `ONCUE_VOICE_ICE_SERVERS_URLS`, `ONCUE_VOICE_ICE_SERVERS_USERNAME`, `ONCUE_VOICE_ICE_SERVERS_CREDENTIAL` 환경 변수에 대응하는 `oncue.voice.*` 설정을 사용한다.
+통화 연결 토큰은 백엔드 개인키로 RS256 서명하고 1분 후 만료시킨다. 보이스 서버는 대응하는 공개키로 검증한다. 로그인 access token용 HMAC secret과 통화 연결 토큰용 RSA 키 쌍은 분리한다. signaling URL, 토큰, `createdAt`, `expiresAt`, ICE 서버 자격 정보를 반환하며 모바일 access token은 보이스 서버 요청에 넣지 않는다. 현재 구현은 `VOICE_JWT_PRIVATE_KEY`, `VOICE_JWT_PRIVATE_KEY_FILE`, `ONCUE_VOICE_SIGNALING_URL`, `ONCUE_VOICE_ICE_SERVERS_URLS`, `ONCUE_VOICE_ICE_SERVERS_USERNAME`, `ONCUE_VOICE_ICE_SERVERS_CREDENTIAL` 환경 변수에 대응하는 `oncue.voice.*` 설정을 사용한다.
 
 - [x] **단계 4: 내부 통화 결과 처리 구현**
 
