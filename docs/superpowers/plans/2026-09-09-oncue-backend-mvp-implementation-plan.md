@@ -211,29 +211,29 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 - `ReservationService#cancel(UserId, ReservationId): ReservationResponse`
 - `ReservationService#list(UserId): List<ReservationResponse>`
 
-- [ ] **단계 1: 비즈니스 규칙 테스트 작성**
+- [x] **단계 1: 비즈니스 규칙 테스트 작성**
 
 활성 key 개별 조회, 조합 검증을 하지 않는 동작, 현지 시각 변환, 5분 전 마감, 같은 사용자의 겹치는 예약 거부, 겹치지 않는 여러 예약 허용, 안전 차단, 취소, 소유권 확인을 테스트한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
 실행: `./gradlew test --tests com.oncue.reservation.ReservationServiceTest`
 
-예상 결과: 예약 코드가 없으므로 실패한다.
+실행 결과: 예약 테스트를 작성했지만 현재 환경에 Gradle wrapper와 시스템 Gradle이 없어 실행하지 못했다.
 
-- [ ] **단계 3: 예약 저장과 시간 변환 구현**
+- [x] **단계 3: 예약 저장과 시간 변환 구현**
 
 `personaKey`, `scenarioKey`, `scenarioContext`, `callGoal`, `scheduledAtLocal`, `timeZone`을 받고 key를 개별 조회한 뒤 DB ID를 저장한다. `scheduled_at_utc`를 계산한다.
 
-- [ ] **단계 4: 겹침·마감 검사 구현**
+- [x] **단계 4: 겹침·마감 검사 구현**
 
 트랜잭션 안에서 해당 사용자의 예약 시간대를 조회하고, 마감 시각 이후 수정·취소를 거부하며, 5분 통화 시간대가 겹치면 거부한다.
 
-- [ ] **단계 5: 안전성 판정 서비스 연결**
+- [x] **단계 5: 안전성 판정 서비스 연결**
 
 결정적 규칙을 먼저 실행한다. 규칙이 위험 신호를 찾은 경우에만 `SafetyClassifierClient`를 호출한다. 판정 결과는 `SAFE`, `UNSAFE`, `FAILED` 세 가지이며, `SAFE`만 예약 저장·수정을 허용한다. `UNSAFE`는 위험 입력, `FAILED`는 애매한 입력이나 LLM 오류·타임아웃처럼 안전 여부를 확인하지 못한 경우다. 두 결과 모두 예약을 저장·수정하지 않으며, `FAILED`의 세부 원인은 내부 로그에만 남긴다.
 
-- [ ] **단계 6: REST controller와 공통 오류 추가**
+- [x] **단계 6: REST controller와 공통 오류 추가**
 
 `POST /api/v1/reservations`, `GET /api/v1/reservations`, `GET /api/v1/reservations/{id}`, `PATCH /api/v1/reservations/{id}`, `POST /api/v1/reservations/{id}/cancel`을 구현한다.
 
@@ -241,7 +241,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 실행: `./gradlew test --tests com.oncue.reservation.ReservationServiceTest --tests com.oncue.reservation.ReservationControllerTest`
 
-예상 결과: 통과한다.
+검증 대기: 현재 환경에 Gradle wrapper와 시스템 Gradle이 없어 컴파일·테스트 통과 여부를 확인하지 못했다. 실제 LLM 안전 판정 provider는 `SafetyClassifierClient` 경계와 fail-closed 기본 구현까지만 추가했으며, provider 연동은 별도 작업으로 남겼다.
 
 ### 작업 6: 예약 스케줄링과 보이스 세션 제어 구현
 
