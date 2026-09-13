@@ -231,7 +231,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 - [ ] **단계 5: 안전성 판정 서비스 연결**
 
-결정적 규칙을 먼저 실행한다. 규칙이 위험 신호를 찾은 경우에만 `SafetyClassifierClient`를 호출하고, 위험하거나 불확실하면 `SAFETY_BLOCKED`로 응답하며 예약을 저장·수정하지 않는다.
+결정적 규칙을 먼저 실행한다. 규칙이 위험 신호를 찾은 경우에만 `SafetyClassifierClient`를 호출한다. 판정 결과는 `SAFE`, `UNSAFE`, `FAILED` 세 가지이며, `SAFE`만 예약 저장·수정을 허용한다. `UNSAFE`는 위험 입력, `FAILED`는 애매한 입력이나 LLM 오류·타임아웃처럼 안전 여부를 확인하지 못한 경우다. 두 결과 모두 예약을 저장·수정하지 않으며, `FAILED`의 세부 원인은 내부 로그에만 남긴다.
 
 - [ ] **단계 6: REST controller와 공통 오류 추가**
 
