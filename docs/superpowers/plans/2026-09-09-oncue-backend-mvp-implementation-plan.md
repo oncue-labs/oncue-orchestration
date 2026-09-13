@@ -312,19 +312,19 @@ JDK 21 기준 전체 테스트가 통과했다. 스케줄러, 보이스 HTTP 어
 - `ConnectionTokenService#issue(UserId, CallSessionId): ConnectionTokenResponse`
 - `CallSessionService#applyResult(CallResult): void`
 
-- [ ] **단계 1: 토큰·결과 테스트 작성**
+- [x] **단계 1: 연결 토큰 테스트 작성**
 
-소유자만 토큰을 발급받는지, 만료·종료 세션을 거부하는지, 토큰의 `callSessionId`, `userId`, `scope`, `jti`, `iat`, `exp`, 서비스 토큰 인증, 중복 결과 처리를 테스트한다.
+소유자만 토큰을 발급받는지, 종료·미준비 세션을 거부하는지, 토큰의 `callSessionId`, `userId`, `scope`, `jti`, `iat`, `exp`와 ICE `urls` 배열을 검증한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
-실행: `./gradlew test --tests com.oncue.call.ConnectionTokenServiceTest --tests com.oncue.call.InternalCallSessionControllerTest`
+실행: `./gradlew test --tests com.oncue.call.ConnectionTokenServiceTest --tests com.oncue.call.ConnectionTokenControllerTest`
 
-예상 결과: 토큰과 내부 결과 코드가 없으므로 실패한다.
+연결 토큰과 컨트롤러가 없던 상태에서는 실패했으며, 구현 후 해당 테스트가 통과했다.
 
-- [ ] **단계 3: 서명된 연결 토큰 구현**
+- [x] **단계 3: 서명된 연결 토큰 구현**
 
-백엔드 개인키로 짧은 만료 시간의 토큰을 서명한다. voice URL, 토큰, `createdAt`, `expiresAt`, 임시 ICE 서버 자격 정보를 반환한다. 모바일 access token은 보이스 서버 요청에 넣지 않는다.
+백엔드 서명키로 발급 후 1분 만료의 토큰을 서명한다. signaling URL, 토큰, `createdAt`, `expiresAt`, ICE 서버 자격 정보를 반환한다. 모바일 access token은 보이스 서버 요청에 넣지 않는다. 현재 구현은 `ONCUE_VOICE_SIGNALING_URL`, `ONCUE_VOICE_ICE_SERVERS_URLS`, `ONCUE_VOICE_ICE_SERVERS_USERNAME`, `ONCUE_VOICE_ICE_SERVERS_CREDENTIAL` 환경 변수에 대응하는 `oncue.voice.*` 설정을 사용한다.
 
 - [ ] **단계 4: 내부 통화 결과 처리 구현**
 
