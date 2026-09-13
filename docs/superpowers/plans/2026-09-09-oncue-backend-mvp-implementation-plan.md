@@ -326,19 +326,19 @@ JDK 21 기준 전체 테스트가 통과했다. 스케줄러, 보이스 HTTP 어
 
 백엔드 서명키로 발급 후 1분 만료의 토큰을 서명한다. signaling URL, 토큰, `createdAt`, `expiresAt`, ICE 서버 자격 정보를 반환한다. 모바일 access token은 보이스 서버 요청에 넣지 않는다. 현재 구현은 `ONCUE_VOICE_SIGNALING_URL`, `ONCUE_VOICE_ICE_SERVERS_URLS`, `ONCUE_VOICE_ICE_SERVERS_USERNAME`, `ONCUE_VOICE_ICE_SERVERS_CREDENTIAL` 환경 변수에 대응하는 `oncue.voice.*` 설정을 사용한다.
 
-- [ ] **단계 4: 내부 통화 결과 처리 구현**
+- [x] **단계 4: 내부 통화 결과 처리 구현**
 
-보이스 서버를 별도로 인증하고, 모바일 거절 요청에서 `voiceSessionId` 기준 종료 요청을 보낸다. 거절된 세션은 `RINGING + FAILED`로 즉시 반영한다. `callSessionId` 기준으로 도착한 최종 결과를 반영하며, 같은 결과는 상태를 중복 변경하지 않고 이미 접수된 것으로 처리하고, 다른 결과가 늦게 오면 상태를 바꾸지 않고 로그에 남긴다.
+보이스 서버 callback은 `oncue.voice.service-token`을 Bearer 토큰으로 검증한다. `callSessionId` 기준으로 도착한 최종 결과를 기존 서비스에 위임하며, 같은 결과는 상태를 중복 변경하지 않고 이미 접수된 것으로 처리하고, 다른 결과가 늦게 오면 상태를 바꾸지 않는다. 내부 callback 경로는 access token 인증 대상에서 제외하고 callback controller가 service token을 직접 검증한다.
 
-- [ ] **단계 5: 하루 1회 상태 보정 작업 구현**
+- [x] **단계 5: 하루 1회 상태 보정 작업 구현**
 
-`callOutcome`이 비어 있고 예상 종료 시간이 지난 세션을 조회한다. 마지막 `callStatus`가 `PREPARING`, `RINGING` 또는 `CONNECTING`이면 `FAILED`, `IN_CALL`이면 `SUCCEEDED`로 보정한다. 보정 작업은 통화 재시도가 아니라 누락된 최종 결과를 정리하는 작업이다.
+`callOutcome`이 비어 있고 `scheduledAtUtc + 7분`이 지난 세션을 조회한다. 마지막 `callStatus`가 `PREPARING`, `RINGING` 또는 `CONNECTING`이면 `FAILED`, `IN_CALL`이면 `SUCCEEDED`로 보정한다. 보정 작업은 통화 재시도가 아니라 누락된 최종 결과를 정리하는 작업이며, UTC 기준 하루 1회 cron으로 실행한다.
 
-- [ ] **단계 6: 테스트 실행 및 통과 확인**
+- [x] **단계 6: 테스트 실행 및 통과 확인**
 
-실행: `./gradlew test --tests com.oncue.call.ConnectionTokenServiceTest --tests com.oncue.call.InternalCallSessionControllerTest`
+실행: `./gradlew clean test`
 
-예상 결과: 통과한다.
+JDK 21 기준 백엔드 전체 테스트가 통과했다.
 
 ### 작업 8: 통합 검증과 Docker 상태 확인 추가
 
