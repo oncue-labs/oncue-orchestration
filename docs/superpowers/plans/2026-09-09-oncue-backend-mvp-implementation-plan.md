@@ -260,7 +260,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 **인터페이스:**
 - `VoiceServerClient#createSession(CreateVoiceSessionRequest): VoiceSessionResponse`
-- `VoiceServerClient#sendTermination(String voiceSessionId): void`
+- `VoiceServerClient#terminateSession(String voiceSessionId): void`
 - `CallSessionService#prepare(ReservationId): CallSession`
 - `CallSessionService#reject(UserId, CallSessionId): CallSession`
 - `CallSessionService#applyResult(CallResult): void`
@@ -284,9 +284,11 @@ Gradle Wrapper를 추가하기 전에는 실행 환경이 없어 검증하지 �
 
 `prepare()`는 먼저 DB의 `callSessionId`를 확보한 뒤 보이스 서버에 요청한다. 요청에는 `callSessionId`, `userId`, 최종 `policySnapshot`, `expiresAt`을 포함하며, `expiresAt`은 `scheduledAtUtc + 7분`으로 계산한다. 현재 구현은 보이스 서버 호출 경계(`VoiceServerClient`)까지만 제공하고 실제 HTTP 어댑터는 다음 단계에서 추가한다.
 
-- [ ] **단계 4: 스케줄러와 보이스 서버 client 구현**
+- [x] **단계 4: 스케줄러와 보이스 서버 client 구현**
 
 `prepareAt = scheduledAtUtc - 3분`을 계산한다. 준비 worker는 1분마다 `prepareAt`이 지났고 아직 통화 세션이 없는 예약만 조회한다. 트랜잭션과 예약별 중복 방지 조건으로 한 예약이 두 번 준비되지 않게 한다. 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 서버에 보이스 세션 준비 데이터와 정책 스냅샷을 보낸다. 이 단계에서는 실제 WebRTC·STT·LLM·TTS 연결을 열지 않는다. 예약 시각에 별도로 VoIP Push를 전송한다.
+
+`RestVoiceServerClient`가 `/internal/v1/voice-sessions` 생성·종료 API를 내부 Bearer 토큰으로 호출하고, `ReservationPreparationScheduler`가 `@Scheduled` 1분 주기로 due 예약을 준비한다. 보이스 서버 URL과 내부 서비스 토큰은 `VOICE_SERVER_URL`, `VOICE_INTERNAL_SERVICE_TOKEN` 환경 변수로 주입한다.
 
 - [x] **단계 5: 테스트 실행 및 통과 확인**
 
