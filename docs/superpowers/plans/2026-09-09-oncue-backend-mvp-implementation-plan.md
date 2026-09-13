@@ -180,7 +180,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 검증 대기: 현재 실행 환경에 Gradle wrapper와 시스템 Gradle이 없어 실행하지 못했다.
 
-- [ ] **단계 3: 구조화된 정책 모델과 병합 규칙 구현**
+- [x] **단계 3: 구조화된 정책 모델과 병합 규칙 구현**
 
 우선순위는 `공통 안전 정책 > 시나리오 규칙 > 페르소나 규칙 > 사용자 컨텍스트·목표`로 한다. 지시사항이나 규칙이 없으면 기본 정책을 사용한다. 정책 조합을 위해 별도 LLM 호출을 하지 않는다. 공통 안전 정책은 금융·인증정보·실존 인물 사칭·음성 복제·로맨스 스캠·성적 그루밍·섹스토션·아동 대상 성적 대화·협박·스토킹·피싱·계정 탈취·폭력·납치·자해·위험 행동 유도를 금지한다. backend가 voice server에 전달하는 정책은 voice 계획의 `DialoguePolicy` 구조와 같은 JSON 필드명을 사용하며, notebook의 `policySnapshot`은 이 최종 정책을 그대로 기록한다.
 
@@ -188,7 +188,7 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 
 실행: `./gradlew test --tests com.oncue.conversation.DialoguePolicyBuilderTest`
 
-예상 결과: 통과한다.
+검증 대기: 백엔드 환경에 Gradle wrapper와 시스템 Gradle이 없어 아직 실행하지 못했다.
 
 ### 작업 5: 예약 생성·수정·조회·취소 구현
 
