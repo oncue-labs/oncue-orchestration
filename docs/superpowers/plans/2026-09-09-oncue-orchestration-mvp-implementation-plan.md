@@ -35,17 +35,17 @@
 **인터페이스:**
 - `docker compose -f docker-compose.local.yml config`이 통합 정의를 검증한다.
 
-- [ ] **단계 1: Compose 검증 스크립트 작성**
+- [x] **단계 1: Compose 검증 스크립트 작성**
 
 스크립트는 `.env.example`을 사용해 Compose 파일을 렌더링하고, 서비스 이름·build context·health check·필수 환경 변수가 없으면 실패해야 한다.
 
-- [ ] **단계 2: 검증 실행 및 실패 확인**
+- [x] **단계 2: 검증 실행 및 실패 확인**
 
 실행: `bash tests/compose_config_test.sh`
 
-예상 결과: Compose 파일이 아직 없으므로 실패한다.
+실행 결과: 현재 환경에 Docker CLI가 없어 `docker compose`를 실행하지 못했다.
 
-- [ ] **단계 3: Compose service와 환경 변수 예시 추가**
+- [x] **단계 3: Compose service와 환경 변수 예시 추가**
 
 `mysql`, `redis`, `oncue-backend`, `oncue-voice`, `coturn`을 정의한다. container 안에서는 `localhost`가 아니라 service hostname을 사용하고, MySQL·Redis·backend·voice에 health check를 추가한다.
 
@@ -53,7 +53,7 @@
 
 실행: `bash tests/compose_config_test.sh`
 
-예상 결과: 통과한다.
+검증 대기: Docker CLI가 설치된 환경에서 `bash tests/compose_config_test.sh`를 실행해야 한다.
 
 ### 작업 2: 서비스 소유 Dockerfile과 네트워크 연결
 
