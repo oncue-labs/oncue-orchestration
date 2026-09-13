@@ -13,6 +13,15 @@ docker compose --env-file .env -f docker-compose.local.yml up --build
 
 기본 stack에는 MySQL, Redis, `oncue-backend`, `oncue-voice`, coturn이 포함된다. Flutter 앱은 Docker에 넣지 않고 Xcode에서 실행한다.
 
+통화 연결 토큰은 로그인 토큰과 별도의 RSA 키 쌍을 사용한다. 로컬에서는 같은 키 쌍으로 개인키와 공개키를 생성한 뒤 `.env`의 `VOICE_JWT_PRIVATE_KEY`와 `ONCUE_VOICE_JWT_PUBLIC_KEY`에 PEM 내용을 입력한다. 줄바꿈은 `\\n`으로 적는다.
+
+```bash
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/oncue-voice-private.pem
+openssl rsa -pubout -in /tmp/oncue-voice-private.pem -out /tmp/oncue-voice-public.pem
+```
+
+운영 환경에서는 PEM을 환경 변수에 직접 넣지 말고 배포 환경의 비밀 저장소에서 주입한다.
+
 ```bash
 docker compose --env-file .env -f docker-compose.local.yml --profile local-llm up --build
 ```
