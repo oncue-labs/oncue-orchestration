@@ -67,13 +67,13 @@
 - backend는 `mysql:3306`, `redis:6379`, Compose service hostname으로 voice에 접근한다.
 - voice는 backend service hostname을 통해 backend로 최종 결과 callback을 보낸다.
 
-- [ ] **단계 1: build context와 의존성 조건 추가**
+- [x] **단계 1: build context와 의존성 조건 추가**
 
 backend는 `../../oncue-backend`에서 build하고 voice는 `../../oncue-voice`에서 build한다. 의존 service의 health check가 통과한 뒤 application container가 시작되도록 한다.
 
-- [ ] **단계 2: 비밀값 없는 환경 변수 이름 추가**
+- [x] **단계 2: 비밀값 없는 환경 변수 이름 추가**
 
-`DB_HOST`, `REDIS_HOST`, `VOICE_SERVER_URL`, `BACKEND_INTERNAL_URL`, JWT key path, Public LLM 설정, TURN realm/port를 문서화한다.
+`DB_URL`, `REDIS_HOST`, `VOICE_SERVER_URL`, `BACKEND_INTERNAL_URL`, JWT key path, Public LLM 설정, TURN realm/port와 백엔드의 signaling·ICE·내부 서비스 토큰 설정을 문서화한다.
 
 - [ ] **단계 3: Compose 설정 검증 실행**
 
@@ -93,7 +93,7 @@ backend는 `../../oncue-backend`에서 build하고 voice는 `../../oncue-voice`�
 - coturn은 문서에 정의된 STUN/TURN host와 port에서 접근할 수 있다.
 - 모바일 connection-token 응답은 같은 local TURN realm과 임시 credential 설정을 사용할 수 있다.
 
-- [ ] **단계 1: coturn service 정의 추가**
+- [x] **단계 1: coturn service 정의 추가**
 
 coturn image를 사용하고 `../../oncue-voice/docker/turn/coturn.conf`를 mount한다. 문서화한 UDP/TCP listener와 relay port 범위를 노출하고 credential은 환경 변수로 관리한다.
 
