@@ -41,6 +41,11 @@ services:
       REDIS_PORT: 6379
       JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET}
       VOICE_SERVER_URL: http://oncue-voice:8000
+      VOICE_INTERNAL_SERVICE_TOKEN: ${VOICE_INTERNAL_SERVICE_TOKEN}
+      ONCUE_VOICE_SIGNALING_URL: ${ONCUE_VOICE_SIGNALING_URL}
+      ONCUE_VOICE_ICE_SERVERS_URLS: stun:localhost:${TURN_PORT},turn:localhost:${TURN_PORT}?transport=udp,turn:localhost:${TURN_PORT}?transport=tcp
+      ONCUE_VOICE_ICE_SERVERS_USERNAME: ${TURN_USERNAME}
+      ONCUE_VOICE_ICE_SERVERS_CREDENTIAL: ${TURN_CREDENTIAL}
     ports:
       - "${BACKEND_PORT}:8080"
     depends_on:
@@ -79,7 +84,7 @@ services:
       oncue-backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --quiet http://localhost:8000/health || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20

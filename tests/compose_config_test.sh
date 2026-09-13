@@ -30,8 +30,10 @@ done
 assert_contains "context: ${BACKEND_CONTEXT}"
 assert_contains "context: ${VOICE_CONTEXT}"
 assert_contains "healthcheck:"
-assert_contains "DB_HOST: mysql"
+assert_contains "DB_URL: jdbc:mysql://mysql:3306/oncue"
 assert_contains "REDIS_HOST: redis"
+assert_contains "VOICE_INTERNAL_SERVICE_TOKEN: replace-with-a-local-voice-token"
+assert_contains "ONCUE_VOICE_SIGNALING_URL: ws://localhost:8000/v1/signaling"
 assert_contains "BACKEND_INTERNAL_URL: http://oncue-backend:8080"
 assert_contains "ONCUE_VOICE_TURN_URLS: turn:localhost:3478?transport=udp,turn:localhost:3478?transport=tcp"
 
