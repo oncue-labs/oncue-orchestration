@@ -13,6 +13,8 @@ docker compose --env-file .env -f docker-compose.local.yml up --build
 
 기본 stack에는 MySQL, Redis, `oncue-backend`, `oncue-voice`, coturn이 포함된다. Flutter 앱은 Docker에 넣지 않고 Xcode에서 실행한다.
 
+보이스 서버는 Redis에 짧은 수명의 보이스 세션 준비 정보와 1회성 연결 토큰의 사용 기록(JTI)을 저장한다. 그래서 앱 프로세스가 재시작되어도 진행 중인 짧은 통화 준비 상태를 복구할 수 있다.
+
 통화 연결 토큰은 로그인 토큰과 별도의 RSA 키 쌍을 사용한다. 로컬에서는 같은 키 쌍으로 개인키와 공개키를 생성한 뒤 `.env`의 `VOICE_JWT_PRIVATE_KEY`와 `ONCUE_VOICE_JWT_PUBLIC_KEY`에 PEM 내용을 입력한다. 줄바꿈은 `\\n`으로 적는다.
 
 ```bash

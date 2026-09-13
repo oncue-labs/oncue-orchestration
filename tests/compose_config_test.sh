@@ -38,6 +38,8 @@ assert_contains "ONCUE_VOICE_SIGNALING_URL: ws://localhost:8000/v1/signaling"
 assert_contains "ONCUE_VOICE_JWT_PUBLIC_KEY: ''"
 assert_contains "BACKEND_INTERNAL_URL: http://oncue-backend:8080"
 assert_contains "ONCUE_VOICE_RUNTIME: realtime"
+assert_contains "REDIS_HOST: redis"
+assert_contains "REDIS_PORT:"
 assert_contains "ONCUE_VOICE_TURN_URLS: turn:localhost:3478?transport=udp,turn:localhost:3478?transport=tcp"
 
 echo "compose config is valid"
