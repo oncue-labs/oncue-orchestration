@@ -246,14 +246,15 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 ### 작업 6: 예약 스케줄링과 보이스 세션 제어 구현
 
 **파일:**
-- 생성: `src/main/java/com/oncue/call/model/CallSession.java`
-- 생성: `src/main/java/com/oncue/call/model/CallStatus.java`
-- 생성: `src/main/java/com/oncue/call/model/CallOutcome.java`
-- 생성: `src/main/java/com/oncue/call/model/CallEndReason.java`
-- 생성: `src/main/java/com/oncue/call/repository/CallSessionRepository.java`
-- 생성: `src/main/java/com/oncue/call/voice_server/VoiceServerClient.java`
-- 생성: `src/main/java/com/oncue/call/voice_server/VoiceServerRequest.java`
-- 생성: `src/main/java/com/oncue/call/service/CallSessionService.java`
+- 생성: `src/main/java/com/oncue/call/CallSession.java`
+- 생성: `src/main/java/com/oncue/call/CallStatus.java`
+- 생성: `src/main/java/com/oncue/call/CallOutcome.java`
+- 생성: `src/main/java/com/oncue/call/CallResult.java`
+- 생성: `src/main/java/com/oncue/call/CallSessionRepository.java`
+- 생성: `src/main/java/com/oncue/call/VoiceServerClient.java`
+- 생성: `src/main/java/com/oncue/call/CreateVoiceSessionRequest.java`
+- 생성: `src/main/java/com/oncue/call/VoiceSessionResponse.java`
+- 생성: `src/main/java/com/oncue/call/CallSessionService.java`
 - 수정: `src/main/java/com/oncue/reservation/scheduler/ReservationScheduler.java`
 - 테스트: `src/test/java/com/oncue/call/CallSessionServiceTest.java`
 
@@ -266,30 +267,32 @@ Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그�
 - `CreateVoiceSessionRequest`는 `callSessionId`, `userId`, `policySnapshot`, `expiresAt`을 가진다. `policySnapshot`은 백엔드가 해당 세션에 사용할 최종 대화 정책 전체다.
 - 거절 API 성공 응답은 `callSessionId`, `callStatus`, `callOutcome`, `createdAt`, `endedAt`을 반환한다.
 
-- [ ] **단계 1: 상태 전이 테스트 작성**
+- [x] **단계 1: 상태 전이 테스트 작성**
 
 `PREPARING → RINGING → CONNECTING → IN_CALL`, 각 단계의 `SUCCEEDED`·`FAILED` 결과, 중복 결과와 종료 결과 이후 결과를 테스트한다.
 수신 중인 세션을 사용자가 거절하면 보이스 세션 종료를 요청하고 `RINGING + FAILED`로 즉시 마감하는 동작도 테스트한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
-실행: `./gradlew test --tests com.oncue.call.CallSessionServiceTest`
+실행: `./gradlew test --tests com.oncue.call.CallSessionServiceTest`.
 
-예상 결과: 세션 상태 관리가 없으므로 실패한다.
+Gradle Wrapper를 추가하기 전에는 실행 환경이 없어 검증하지 못했으며, Wrapper 추가 후에는 구현 전제의 실패 확인을 거쳐 통과 상태를 확인했다.
 
-- [ ] **단계 3: 통화 세션 모델과 전이 구현**
+- [x] **단계 3: 통화 세션 모델과 전이 구현**
 
 예약 하나당 세션 하나만 만들고 `callStatus`, `callOutcome`, 시간, 외부 `voiceSessionId`를 저장한다. 통화 종료 뒤에도 `callStatus`는 마지막 진행 단계를 유지한다. 음성·대화 텍스트는 저장하지 않는다.
+
+`prepare()`는 먼저 DB의 `callSessionId`를 확보한 뒤 보이스 서버에 요청한다. 요청에는 `callSessionId`, `userId`, 최종 `policySnapshot`, `expiresAt`을 포함하며, `expiresAt`은 `scheduledAtUtc + 7분`으로 계산한다. 현재 구현은 보이스 서버 호출 경계(`VoiceServerClient`)까지만 제공하고 실제 HTTP 어댑터는 다음 단계에서 추가한다.
 
 - [ ] **단계 4: 스케줄러와 보이스 서버 client 구현**
 
 `prepareAt = scheduledAtUtc - 3분`을 계산한다. 준비 worker는 1분마다 `prepareAt`이 지났고 아직 통화 세션이 없는 예약만 조회한다. 트랜잭션과 예약별 중복 방지 조건으로 한 예약이 두 번 준비되지 않게 한다. 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 서버에 보이스 세션 준비 데이터와 정책 스냅샷을 보낸다. 이 단계에서는 실제 WebRTC·STT·LLM·TTS 연결을 열지 않는다. 예약 시각에 별도로 VoIP Push를 전송한다.
 
-- [ ] **단계 5: 테스트 실행 및 통과 확인**
+- [x] **단계 5: 테스트 실행 및 통과 확인**
 
-실행: `./gradlew test --tests com.oncue.call.CallSessionServiceTest`
+실행: `JAVA_HOME=... ./gradlew clean test`
 
-예상 결과: 통과한다.
+JDK 21 기준 전체 테스트가 통과했다. 스케줄러, 보이스 HTTP 어댑터, 연결 토큰은 작업 6의 남은 범위다.
 
 ### 작업 7: 연결 토큰과 보이스 통화 결과 구현
 
