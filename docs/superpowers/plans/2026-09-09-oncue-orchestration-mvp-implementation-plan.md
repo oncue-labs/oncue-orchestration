@@ -73,7 +73,7 @@ backend는 `../../oncue-backend`에서 build하고 voice는 `../../oncue-voice`�
 
 - [x] **단계 2: 비밀값 없는 환경 변수 이름 추가**
 
-`DB_URL`, `REDIS_HOST`, `VOICE_SERVER_URL`, `BACKEND_INTERNAL_URL`, 로그인 토큰용 HMAC secret, 통화 연결 토큰용 RSA private/public key, Public LLM 설정, TURN realm/port와 백엔드의 signaling·ICE·내부 서비스 토큰 설정을 문서화한다. 로그인 토큰과 통화 연결 토큰은 서로 다른 키 재료를 사용한다.
+`DB_URL`, `REDIS_HOST`, `VOICE_SERVER_URL`, `BACKEND_INTERNAL_URL`, `ONCUE_VOICE_RUNTIME`, 로그인 토큰용 HMAC secret, 통화 연결 토큰용 RSA private/public key, Public LLM 설정, TURN realm/port와 백엔드의 signaling·ICE·내부 서비스 토큰 설정을 문서화한다. 로그인 토큰과 통화 연결 토큰은 서로 다른 키 재료를 사용한다.
 
 - [ ] **단계 3: Compose 설정 검증 실행**
 
