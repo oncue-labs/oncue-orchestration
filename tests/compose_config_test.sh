@@ -33,9 +33,9 @@ assert_contains "healthcheck:"
 assert_contains "DB_URL: jdbc:mysql://mysql:3306/oncue"
 assert_contains "REDIS_HOST: redis"
 assert_contains "VOICE_INTERNAL_SERVICE_TOKEN: replace-with-a-local-voice-token"
-assert_contains "VOICE_JWT_PRIVATE_KEY: ''"
+assert_contains 'VOICE_JWT_PRIVATE_KEY: ""'
 assert_contains "ONCUE_VOICE_SIGNALING_URL: ws://localhost:8000/v1/signaling"
-assert_contains "ONCUE_VOICE_JWT_PUBLIC_KEY: ''"
+assert_contains 'ONCUE_VOICE_JWT_PUBLIC_KEY: ""'
 assert_contains "BACKEND_INTERNAL_URL: http://oncue-backend:8080"
 assert_contains "ONCUE_VOICE_RUNTIME: realtime"
 assert_contains "REDIS_HOST: redis"

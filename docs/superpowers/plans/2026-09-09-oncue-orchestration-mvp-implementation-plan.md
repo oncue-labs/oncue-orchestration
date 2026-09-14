@@ -49,11 +49,11 @@
 
 `mysql`, `redis`, `oncue-backend`, `oncue-voice`, `coturn`을 정의한다. container 안에서는 `localhost`가 아니라 service hostname을 사용하고, MySQL·Redis·backend·voice에 health check를 추가한다.
 
-- [ ] **단계 4: 검증 실행 및 통과 확인**
+- [x] **단계 4: 검증 실행 및 통과 확인**
 
 실행: `bash tests/compose_config_test.sh`
 
-검증 대기: Docker CLI가 설치된 환경에서 `bash tests/compose_config_test.sh`를 실행해야 한다.
+검증 결과: Docker Desktop 29.7.2에서 `compose config is valid`를 확인했다. 빈 RSA 키 값은 Compose가 `""`로 렌더링하므로 검사 스크립트의 기대값도 그 형식으로 맞췄다.
 
 ### 작업 2: 서비스 소유 Dockerfile과 네트워크 연결
 
@@ -75,11 +75,11 @@ backend는 `../../oncue-backend`에서 build하고 voice는 `../../oncue-voice`�
 
 `DB_URL`, `REDIS_HOST`, `REDIS_PORT`, `VOICE_SERVER_URL`, `BACKEND_INTERNAL_URL`, `ONCUE_VOICE_RUNTIME`, 로그인 토큰용 HMAC secret, 통화 연결 토큰용 RSA private/public key, Public LLM 설정, TURN realm/port와 백엔드의 signaling·ICE·내부 서비스 토큰 설정을 문서화한다. 로그인 토큰과 통화 연결 토큰은 서로 다른 키 재료를 사용한다. 보이스 서버는 Redis에 짧은 기술 상태와 JTI 사용 기록을 저장한다.
 
-- [ ] **단계 3: Compose 설정 검증 실행**
+- [x] **단계 3: Compose 설정 검증 실행**
 
 실행: `docker compose --env-file .env.example -f docker-compose.local.yml config` 및 `bash tests/compose_config_test.sh`
 
-예상 결과: Flutter 프로젝트를 Docker로 실행하지 않아도 통과한다.
+검증 결과: 두 명령 모두 통과했다. Flutter 프로젝트는 Docker 밖에서 실행한다.
 
 ### 작업 3: voice가 소유한 설정을 사용해 coturn 연결
 
@@ -149,15 +149,15 @@ coturn container가 시작되는지 확인하고, credential을 노출하지 않
 **인터페이스:**
 - 개발자가 service 내부 구현을 몰라도 기본 stack을 시작하고 health를 확인하고 종료할 수 있다.
 
-- [ ] **단계 1: smoke test 명령 작성**
+- [x] **단계 1: smoke test 명령 작성**
 
 MySQL, Redis, backend, voice, coturn을 시작하고 health를 기다린다. backend와 voice health endpoint를 호출하며 application container가 service name으로 서로를 resolve할 수 있는지 확인한다.
 
-- [ ] **단계 2: smoke test 실행 및 실패 확인**
+- [x] **단계 2: smoke test 실행 및 실패 확인**
 
 실행: `bash tests/integration/compose_smoke_test.sh`
 
-예상 결과: service Dockerfile과 health endpoint가 준비되기 전까지 실패한다.
+검증 결과: 기존 Compose 프로젝트를 유지한 상태에서 smoke test를 실행해 통과했다. MySQL·Redis·backend·voice·coturn health, host health endpoint, backend↔voice HTTP, voice↔backend HTTP, voice↔Redis 연결을 확인했다.
 
 - [ ] **단계 3: 기본 및 profile 실행 방법 문서화**
 
