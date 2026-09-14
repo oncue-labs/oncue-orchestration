@@ -429,8 +429,8 @@ fake provider로 세션을 만들고 offer를 인증하며 테스트 오디오 t
 
 realm, 외부 주소, 자격 정보, 포트는 환경 변수에서 받는다. `coturn.conf`에 비밀값을 넣지 않고 README에 필요한 변수를 기록한다.
 
-- [ ] **단계 4: 전체 Python 검증 실행**
+- [x] **단계 4: 전체 Python 검증 실행**
 
 실행: `poetry run pytest` 및 `docker build -t oncue-voice:test .`
 
-검증 결과: 하위 세션에서 전체 테스트 92개와 Poetry 검증은 통과했다. 현재 실행 환경에 Docker CLI/daemon이 없어 이미지 build는 실행하지 못했으므로 컨테이너 검증은 남겨 둔다.
+검증 결과: `oncue-voice` 저장소의 `.venv/bin/pytest -q`로 전체 테스트 104개가 통과했다. Docker Desktop 29.7.2에서 `docker build --tag oncue-voice:test .`도 성공했다. 테스트 중 Jupyter 평가 노트북은 샌드박스의 로컬 포트 제한으로 첫 실행이 실패했지만, 권한을 허용한 동일 명령으로 재실행하여 통과했다. 경고는 Starlette/httpx deprecation 2건이며 테스트 실패는 없다.
