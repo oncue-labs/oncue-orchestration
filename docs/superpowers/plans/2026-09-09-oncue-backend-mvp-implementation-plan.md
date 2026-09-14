@@ -351,22 +351,22 @@ JDK 21 기준 백엔드 전체 테스트가 통과했다.
 **인터페이스:**
 - 백엔드가 음성을 중계하지 않고 예약부터 보이스 세션 경계까지 동작하는지 검증한다.
 
-- [ ] **단계 1: 백엔드 전체 흐름 통합 테스트 작성**
+- [x] **단계 1: 백엔드 전체 흐름 통합 테스트 작성**
 
 MySQL과 Redis Testcontainers를 사용한다. 사용자 생성, key를 이용한 안전한 예약, 통화 세션 준비, 연결 토큰 발급, `IN_CALL` 상태의 최종 결과 전달을 수행하고 저장된 상태를 검증한다.
 
-- [ ] **단계 2: 통합 테스트 실행 및 실패 확인**
+- [x] **단계 2: 통합 테스트 실행 및 실패 확인**
 
-실행: `./gradlew integrationTest --tests com.oncue.integration.ReservationToCallIntegrationTest`
+실행: `JAVA_HOME=... ./gradlew integrationTest --tests com.oncue.integration.ReservationToCallIntegrationTest`
 
-예상 결과: 백엔드 경계가 연결되기 전이므로 실패한다.
+처음에는 테스트의 응답 필드명이 `connectionToken`이 아니라 `token`으로 작성되어 실패했고, 계약에 맞게 수정한 뒤 통과했다.
 
-- [ ] **단계 3: request ID, health check, 안전한 컨테이너 설정 추가**
+- [x] **단계 3: request ID, health check, 안전한 컨테이너 설정 추가**
 
 오류 응답에 `requestId`와 `createdAt`을 넣고, 비밀값을 노출하지 않는 의존성 health check를 제공하며, Docker 애플리케이션을 non-root 사용자로 실행한다.
 
-- [ ] **단계 4: 전체 백엔드 검증 실행**
+- [x] **단계 4: 전체 백엔드 검증 실행**
 
-실행: `./gradlew test integrationTest`
+실행: `JAVA_HOME=... ./gradlew clean test integrationTest`
 
-예상 결과: 통과한다.
+결과: JDK 21 기준 일반 테스트와 MySQL·Redis Testcontainers 통합 테스트가 통과했다. Docker 이미지 build와 로컬 Compose 재기동도 통과했고, backend 컨테이너는 `oncue` non-root 사용자로 `healthy` 상태가 되었다.
