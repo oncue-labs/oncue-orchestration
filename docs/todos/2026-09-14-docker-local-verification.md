@@ -68,12 +68,17 @@ curl http://localhost:8000/health
 
 MySQL, Redis, 백엔드, 보이스 서버가 `healthy` 또는 정상 실행 상태여야 한다. 실제 음성 통화는 OpenAI API key와 모바일 클라이언트 연결까지 준비한 뒤 별도 검증한다.
 
-## 완료 후 다음 작업
+## 검증 완료 상태
 
-Docker 검증이 끝나면 다음 순서로 진행한다.
+- Compose 전체 stack의 health와 backend↔voice HTTP, voice↔Redis 연결을 확인했다.
+- 실제 backend 발급 RS256 connection token으로 voice WebSocket 인증을 확인했다.
+- `hangup` 후 WebSocket close code `1000`과 backend callback의 `CONNECTING/SUCCEEDED` 반영을 확인했다.
+- 검증용 임시 사용자·예약·콜 세션은 검증 후 삭제했다.
+- 이 과정에서 발견한 backend lazy-loading 오류와 voice 정상 종료 오류는 각 레포에 회귀 테스트와 함께 수정했다.
 
-1. Compose 안에서 백엔드와 보이스 서버의 세션 생성·콜백·Redis 저장 흐름을 확인한다.
-2. 모바일 없이 WebSocket signaling과 RS256 연결 토큰 검증을 자동화된 통합 테스트로 확인한다.
-3. 그 결과가 통과하면 `oncue-mobile`의 iOS 예약·수신 시스템 화면 연동을 구현한다.
+## 다음 작업
+
+1. backend와 voice의 수정사항을 각 레포에 커밋·push한다.
+2. `oncue-mobile`에서 connection-token 응답, WebSocket signaling, `flutter_webrtc` 연결을 구현한다.
 
 서비스 간 API나 토큰 계약을 바꿔야 하는 문제가 나오면 관련 레포 작업을 멈추고 계약을 먼저 확정한다.
