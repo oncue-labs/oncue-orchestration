@@ -121,9 +121,9 @@ Java 21, Spring Boot 3.2.3, Web, Validation, Security, JPA, Redis, Flyway, MySQL
 
 **인터페이스:**
 - `POST /api/v1/auth/login`
-- `LoginRequest`는 `provider`, `authorizationCode`, `codeVerifier`를 가진다. `codeVerifier`는 모바일이 PKCE 인증 시작 시 생성한 값이며 provider 토큰 교환에만 사용한다.
+- `LoginRequest`는 `provider`와 provider별 인증 입력을 가진다. Kakao는 `providerAccessToken`, X는 `authorizationCode`와 `codeVerifier`를 사용한다.
 - `LoginResponse`는 `accessToken`, `expiresAt`, `createdAt`을 가진다.
-- `IdentityProviderClient#resolve(String authorizationCode, String codeVerifier): ExternalIdentity`
+- `IdentityProviderClient#resolve(LoginRequest): ExternalIdentity`
 - `AuthService#login(LoginRequest): LoginResponse`
 - `AccessTokenService#issue(User): AccessToken`
 
@@ -139,7 +139,7 @@ Java 21, Spring Boot 3.2.3, Web, Validation, Security, JPA, Redis, Flyway, MySQL
 
 - [ ] **단계 3: auth 서비스와 provider 경계 구현**
 
-Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그인 시 사용자를 생성하며 백엔드 access token을 발급한다. provider별 HTTP 응답 파싱은 각 `identity_provider` client 안에 둔다. 인증 코드 교환 요청에는 `authorizationCode`와 `codeVerifier`를 함께 사용한다.
+Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그인 시 사용자를 생성하며 백엔드 access token을 발급한다. Kakao client는 모바일이 전달한 provider access token으로 Kakao 사용자 정보를 확인하고, X client는 authorization code와 codeVerifier로 provider token을 교환한다. provider별 HTTP 응답 파싱은 각 `identity_provider` client 안에 둔다. MVP에서는 refresh token을 발급하지 않는다.
 
 - [ ] **단계 4: controller와 보안 필터 추가**
 

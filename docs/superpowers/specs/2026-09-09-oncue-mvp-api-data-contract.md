@@ -30,15 +30,26 @@ POST /api/v1/auth/login
 
 요청:
 
+Kakao 네이티브 로그인:
+
 ```json
 {
   "provider": "kakao",
+  "providerAccessToken": "..."
+}
+```
+
+X 로그인:
+
+```json
+{
+  "provider": "x",
   "authorizationCode": "...",
   "codeVerifier": "..."
 }
 ```
 
-`provider`는 `kakao` 또는 `x`만 허용한다. 모바일은 OAuth 인증을 시작할 때 PKCE `code_challenge`를 사용하고, 인증 코드를 백엔드에 전달할 때 그에 대응하는 단기 `codeVerifier`도 함께 전달한다. 백엔드는 provider 토큰 교환 시 인증 코드와 `codeVerifier`를 함께 사용한다. `codeVerifier`는 장기 access token이나 사용자 식별자가 아니다.
+`provider`는 `kakao` 또는 `x`만 허용한다. Kakao는 네이티브 Flutter SDK가 발급한 단기 `providerAccessToken`을 전달하고, 백엔드는 Kakao 사용자 정보 API로 외부 identity를 확인한다. X는 OAuth 2.0 Authorization Code + PKCE를 사용하며, 모바일이 인증 코드를 전달할 때 단기 `codeVerifier`도 함께 전달한다. `providerAccessToken`, `authorizationCode`, `codeVerifier`는 OnCue 장기 자격 증명이 아니며 백엔드가 사용자 로그인 처리 후 보관하지 않는다.
 
 응답:
 
@@ -49,6 +60,8 @@ POST /api/v1/auth/login
   "createdAt": "2026-09-08T12:00:00Z"
 }
 ```
+
+MVP에서는 OnCue `refreshToken`을 발급하거나 받지 않는다. `accessToken`이 만료되면 모바일은 저장된 세션을 삭제하고 사용자가 다시 로그인한다. refresh token을 도입할 때는 재발급 endpoint, 회전·폐기 정책, 모바일 보안 저장소 변경을 별도 버전에서 함께 정의한다.
 
 ### 백엔드 → 보이스 서버
 

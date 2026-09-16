@@ -77,7 +77,7 @@ Dart 공통 계약이 수신 전화를 OS에 등록하고, answer/reject/end 이
 - 테스트: `test/auth/application/auth_service_test.dart`
 
 **인터페이스:**
-- `AuthApiClient.login(String provider, String authorizationCode, String codeVerifier): Future<AuthSession>`
+- `AuthApiClient.login(AuthLoginRequest): Future<AuthSession>`
 - `ApiClient.request<T>(ApiRequest<T> request): Future<T>`
 - `AuthService.loginWithKakao(): Future<void>`
 - `AuthService.loginWithX(): Future<void>`
@@ -94,7 +94,7 @@ Kakao/X 로그인 성공, access token 저장, 만료 token 처리, 401 logout, 
 
 - [ ] **단계 3: provider 공통 인증과 API transport 구현**
 
-Kakao/X provider 세부 사항은 auth adapter 안에 둔다. OAuth 인증 시작 시 생성한 PKCE `codeVerifier`를 인증 코드와 함께 백엔드 로그인 API에 전달한다. 백엔드 access token을 `Authorization: Bearer`에 넣고 보이스 시그널링 요청에는 넣지 않는다.
+Kakao/X provider 세부 사항은 auth adapter 안에 둔다. Kakao adapter는 네이티브 SDK가 받은 `providerAccessToken`을 백엔드에 전달하고, X adapter는 authorization code와 PKCE `codeVerifier`를 전달한다. 백엔드 access token을 `Authorization: Bearer`에 넣고 보이스 시그널링 요청에는 넣지 않는다. MVP에서는 refresh token을 저장하거나 갱신하지 않는다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 
