@@ -24,6 +24,17 @@ openssl rsa -pubout -in /tmp/oncue-voice-private.pem -out /tmp/oncue-voice-publi
 
 운영 환경에서는 PEM을 환경 변수에 직접 넣지 말고 배포 환경의 비밀 저장소에서 주입한다.
 
+X 로그인은 OAuth 2.0 Authorization Code + PKCE를 사용한다. `.env`의
+`ONCUE_AUTH_X_CLIENT_ID`에는 X Developer Portal에서 발급한 Client ID를 입력하고,
+`X_REDIRECT_URI`는 X 콘솔과 동일한 아래 값으로 유지한다.
+
+```text
+com.oncue.oncuemobile://oauth/x/callback
+```
+
+Native App의 Client Secret은 모바일에 넣지 않는다. 현재 MVP에서는 PKCE를 사용하므로
+Client ID만 모바일과 백엔드에 전달한다.
+
 ```bash
 docker compose --env-file .env -f docker-compose.local.yml --profile local-llm up --build
 ```

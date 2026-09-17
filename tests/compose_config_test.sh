@@ -32,6 +32,8 @@ assert_contains "context: ${VOICE_CONTEXT}"
 assert_contains "healthcheck:"
 assert_contains "DB_URL: jdbc:mysql://mysql:3306/oncue"
 assert_contains "REDIS_HOST: redis"
+assert_contains "ONCUE_AUTH_X_CLIENT_ID: replace-with-a-local-x-client-id"
+assert_contains "X_REDIRECT_URI: com.oncue.oncuemobile://oauth/x/callback"
 assert_contains "VOICE_INTERNAL_SERVICE_TOKEN: replace-with-a-local-voice-token"
 assert_contains 'VOICE_JWT_PRIVATE_KEY: ""'
 assert_contains "ONCUE_VOICE_SIGNALING_URL: ws://localhost:8000/v1/signaling"

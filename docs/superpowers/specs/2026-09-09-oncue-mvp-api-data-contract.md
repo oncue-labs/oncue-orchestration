@@ -51,6 +51,10 @@ X 로그인:
 
 `provider`는 `kakao` 또는 `x`만 허용한다. Kakao는 네이티브 Flutter SDK가 발급한 단기 `providerAccessToken`을 전달하고, 백엔드는 Kakao 사용자 정보 API로 외부 identity를 확인한다. X는 OAuth 2.0 Authorization Code + PKCE를 사용하며, 모바일이 인증 코드를 전달할 때 단기 `codeVerifier`도 함께 전달한다. `providerAccessToken`, `authorizationCode`, `codeVerifier`는 OnCue 장기 자격 증명이 아니며 백엔드가 사용자 로그인 처리 후 보관하지 않는다.
 
+X 모바일 callback URI는 `com.oncue.oncuemobile://oauth/x/callback`으로 고정한다. 이 값은 X 개발자 콘솔의 callback URL, 모바일 AppAuth 설정, 백엔드 `X_REDIRECT_URI`가 정확히 일치해야 한다. X client ID는 public client 값이므로 실행 환경에서 주입하고 저장하지 않는다.
+
+Kakao iOS custom scheme은 Kakao native app key에 따라 `kakao{nativeAppKey}`로 설정한다. native app key는 코드와 저장소에 커밋하지 않고 실행 환경에 주입하며, iOS `Info.plist`의 scheme은 해당 키로 별도 설정한다.
+
 응답:
 
 ```json
@@ -198,6 +202,16 @@ POST /internal/v1/voice-sessions
   "createdAt": "2026-09-08T12:00:00Z"
 }
 ```
+
+세션 종료 요청은 백엔드가 보이스 서버에 동기적으로 전달한다.
+
+```text
+POST /internal/v1/voice-sessions/{voiceSessionId}/terminate
+```
+
+종료가 처리되면 보이스 서버는 `2xx` 응답을 반환한다. MVP에서 백엔드는 응답 본문을 사용하지 않는다.
+
+두 내부 요청 모두 서비스 간 Bearer 인증을 사용하며, 보이스 서버는 `voiceSessionId`를 기준으로 자신의 세션을 관리한다.
 
 > 읽기 메모: `callSessionId`는 온큐 전체의 통화 ID이고 `voiceSessionId`는 보이스 서버 내부 실행 ID다. 모바일에는 `voiceSessionId`를 노출하지 않는다.
 
