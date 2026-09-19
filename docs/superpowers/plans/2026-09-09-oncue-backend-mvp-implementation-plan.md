@@ -288,11 +288,11 @@ Gradle Wrapper를 추가하기 전에는 실행 환경이 없어 검증하지 �
 
 `prepareAt = scheduledAtUtc - 3분`을 계산한다. 준비 worker는 1분마다 `prepareAt`이 지났고 아직 통화 세션이 없는 예약만 조회한다. 트랜잭션과 예약별 중복 방지 조건으로 한 예약이 두 번 준비되지 않게 한다. 활성 페르소나·시나리오를 독립적으로 읽고, 대화 정책을 만들고, 보이스 서버에 보이스 세션 준비 데이터와 정책 스냅샷을 보낸다. 이 단계에서는 실제 WebRTC·STT·LLM·TTS 연결을 열지 않는다.
 
-`RestVoiceServerClient`가 `/internal/v1/voice-sessions` 생성·종료 API를 내부 Bearer 토큰으로 호출하고, `ReservationPreparationScheduler`가 `@Scheduled` 1분 주기로 due 예약을 준비한다. 예약 시각에는 준비된 세션을 `PREPARING → RINGING`으로 전환한다. 현재 MVP에서는 이 상태를 모바일 자동 수신으로 전달하지 않으며, PushKit 전송은 후속 작업으로 둔다. 보이스 서버 URL과 내부 서비스 토큰은 `VOICE_SERVER_URL`, `VOICE_INTERNAL_SERVICE_TOKEN` 환경 변수로 주입한다.
+`RestVoiceServerClient`가 `/internal/v1/voice-sessions` 생성·종료 API를 내부 Bearer 토큰으로 호출하고, `ReservationPreparationScheduler`가 `@Scheduled` 1분 주기로 due 예약을 준비한다. 예약 시각에는 준비된 세션을 `PREPARING → RINGING`으로 전환하고 APNs VoIP Push를 전송한다. 보이스 서버 URL과 내부 서비스 토큰은 `VOICE_SERVER_URL`, `VOICE_INTERNAL_SERVICE_TOKEN` 환경 변수로 주입한다. APNs는 `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID`, `APNS_PRIVATE_KEY_FILE` 환경 변수로 주입한다.
 
-- [ ] **단계 6: 예약 시각의 `RINGING` 전환 구현**
+- [x] **단계 6: 예약 시각의 `RINGING` 전환과 APNs 전송 구현**
 
-예약 시각이 지난 `PREPARING` 세션을 한 번만 `RINGING`으로 전환한다. 이미 종료된 세션이나 취소된 예약은 변경하지 않는다. 이 단계에서는 Foreground WebSocket, 주기 조회, 앱 타이머, PushKit 전송을 구현하지 않는다.
+예약 시각이 지난 `PREPARING` 세션을 한 번만 `RINGING`으로 전환하고 등록된 기기에 APNs VoIP Push를 보낸다. 기기 토큰이 없거나 APNs 전송이 실패하면 `RINGING + FAILED`로 종료한다. 이미 종료된 세션이나 취소된 예약은 변경하지 않는다. Foreground WebSocket, 주기 조회, 앱 타이머는 구현하지 않는다.
 
 - [x] **단계 5: 테스트 실행 및 통과 확인**
 

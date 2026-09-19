@@ -67,6 +67,32 @@ Kakao iOS custom scheme은 Kakao native app key에 따라 `kakao{nativeAppKey}`�
 
 MVP에서는 OnCue `refreshToken`을 발급하거나 받지 않는다. `accessToken`이 만료되면 모바일은 저장된 세션을 삭제하고 사용자가 다시 로그인한다. refresh token을 도입할 때는 재발급 endpoint, 회전·폐기 정책, 모바일 보안 저장소 변경을 별도 버전에서 함께 정의한다.
 
+### 모바일 → 백엔드: iOS PushKit 기기 토큰 등록
+
+```text
+PUT /api/v1/push-device
+```
+
+로그인 또는 앱 시작 시 현재 기기의 PushKit VoIP 토큰을 등록한다. 사용자당 활성 토큰은 하나만 보관하며, 다른 기기에서 로그인하거나 토큰이 갱신되면 기존 값을 새 값으로 교체한다.
+
+요청:
+
+```json
+{
+  "deviceToken": "hex-encoded-apns-token",
+  "platform": "IOS",
+  "environment": "SANDBOX"
+}
+```
+
+`environment`는 개발 빌드의 APNs sandbox endpoint를 뜻하는 `SANDBOX` 또는 TestFlight·배포 빌드의 APNs production endpoint를 뜻하는 `PRODUCTION`만 허용한다. `DEVELOPMENT`라는 API 값은 사용하지 않는다.
+
+로그아웃 시 현재 사용자 토큰을 삭제한다.
+
+```text
+DELETE /api/v1/push-device
+```
+
 ### 백엔드 → 보이스 서버
 
 서비스 간 인증 토큰을 사용한다. 보이스 서버는 백엔드가 보낸 요청인지 확인한 뒤 세션 생성과 통화 결과 전달을 처리한다.
@@ -164,7 +190,7 @@ POST /api/v1/reservations/{reservationId}/cancel
 
 통화 준비 단계에서는 식별자·정책 스냅샷·provider 설정·만료 시각을 포함한 보이스 세션 준비 데이터를 만든다. 보이스 서버는 실제 STT·LLM·TTS provider 연결과 WebRTC 미디어 처리를 사용자가 전화를 받은 뒤 시작한다. 따라서 통화 준비 후 예정 시각까지 실제 음성 연결을 계속 유지하지 않는다.
 
-예약 시각이 되면 백엔드는 준비된 세션을 `PREPARING → RINGING`으로 전환한다. 현재 MVP 개발 단계에서는 이 상태를 자동 수신 알림으로 전달하지 않으며, PushKit 전송은 Apple Developer Program과 APNs 설정 이후의 후속 작업으로 둔다.
+예약 시각이 되면 백엔드는 준비된 세션을 `PREPARING → RINGING`으로 전환하고 등록된 기기에 APNs VoIP Push를 보낸다. Push payload에는 `callSessionId`와 안전한 `displayName`만 포함한다. 기기 토큰이 없거나 APNs 전송이 실패하면 `RINGING + FAILED`로 종료한다.
 
 예약 생성·목록·상세 응답에서 아직 준비 시각에 도달하지 않았다면 `callSessionId`가 없을 수 있다. 세션이 준비된 뒤에는 통화 세션의 `callSessionId`를 조회할 수 있지만, `voiceSessionId`는 모바일에 노출하지 않는다. CallKit 수신 정보에는 `callSessionId`와 `displayName`만 사용하며, 이미지·미리듣기 URL은 예약·조합 화면에서만 사용한다.
 

@@ -6,7 +6,7 @@
 
 **아키텍처:** Flutter UI, 애플리케이션 상태, API client는 플랫폼 공통으로 유지한다. iOS CallKit과 Android system-managed Telecom은 `SystemCallManager` 플랫폼 adapter 뒤에 두고, 두 OS가 같은 통화 상태 계약을 구현하도록 한다. 백엔드·보이스 서버 통신과 WebRTC 연결은 별도의 `VoiceCallService`가 담당한다.
 
-**기술 스택:** Flutter stable, Dart, iOS Swift, CallKit bridge foundation, `flutter_webrtc`, HTTPS REST, unit/widget/integration test. PushKit과 APNs VoIP Push는 MVP 이후 작업으로 분리한다.
+**기술 스택:** Flutter stable, Dart, iOS Swift, PushKit·CallKit bridge, `flutter_webrtc`, HTTPS REST, unit/widget/integration test. APNs VoIP Push는 MVP에 포함한다.
 
 **사양:** `docs/superpowers/specs/2026-09-08-oncue-mvp-design.md`, `docs/superpowers/specs/2026-09-09-oncue-mvp-api-data-contract.md`
 
@@ -15,7 +15,7 @@
 - iOS를 먼저 지원하고 Android는 나중에 같은 Dart 도메인 계약 뒤에 구현한다.
 - 하드코딩된 MVP 통화 카드에는 DB 숫자 ID가 아니라 `personaKey`와 `scenarioKey`를 사용한다.
 - 네 개의 MVP 선택 카드와 로컬 이미지·음성 미리듣기 asset을 사용하며, 관리자 편집 화면과 동적 음성 설정은 만들지 않는다.
-- MVP에서는 예약 시각 자동 수신 알림을 구현하지 않는다. 후속 범위에서 iOS는 PushKit과 CallKit, Android는 FCM과 system-managed Telecom을 사용한다.
+- MVP에서는 iOS 예약 시각 자동 수신 알림을 PushKit과 CallKit으로 구현한다. Android는 후속 범위에서 FCM과 system-managed Telecom을 사용한다.
 - 음성은 WebRTC로 전달하고 백엔드를 거치지 않는다. WebSocket은 WebRTC 시그널링에만 사용한다.
 - 백엔드 API에는 사용자 access token을, 보이스 시그널링에는 1회성 연결 토큰을 사용한다.
 - 시나리오 컨텍스트 placeholder 하나와 통화 목표 placeholder 하나만 표시한다.
@@ -187,9 +187,9 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. Kakao adapter는 �
 
 예상 결과: 통과한다.
 
-### 후속 작업: PushKit과 CallKit 자동 수신 전화 구현
+### 작업 6: PushKit과 CallKit 자동 수신 전화 구현
 
-> **MVP 이후 보류:** Apple Developer Program 가입과 APNs 설정이 준비된 뒤 진행한다. MVP에서는 이 작업을 구현하지 않으며, 현재 커밋된 CallKit·PushKit bridge는 후속 연결을 위한 기반 코드로 유지한다. Foreground 수신 WebSocket·주기 조회·앱 타이머를 별도로 추가하지 않는다.
+> **MVP 포함:** Apple Developer Program과 APNs 설정은 실기기 검증 전에 사용자가 준비한다. Foreground 수신 WebSocket·주기 조회·앱 타이머는 추가하지 않는다.
 
 **파일:**
 - 수정: `ios/Runner/OnCueCallKitBridge.swift`
@@ -207,21 +207,21 @@ Kakao/X provider 세부 사항은 auth adapter 안에 둔다. Kakao adapter는 �
 
 정상 payload, 잘못된 payload, 중복 Push, 시스템 통화 등록 실패, answer/reject/end callback을 테스트한다.
 
-- [ ] **단계 2: 테스트 실행 및 실패 확인**
+- [x] **단계 2: 테스트 실행 및 실패 확인**
 
 실행: `flutter test test/call/application/incoming_call_service_test.dart`
 
-예상 결과: PushKit과 CallKit bridge가 없으므로 실패한다.
+예상 결과: PushKit payload 처리 테스트가 통과한다.
 
-- [ ] **단계 3: native PushKit 등록과 CallKit 보고 구현**
+- [x] **단계 3: native PushKit 등록과 CallKit 보고 구현**
 
-Apple Developer Program과 APNs 설정이 준비되면 iOS VoIP Push와 CallKit을 연결한다. Android는 FCM과 system-managed Telecom을 사용하도록 별도 native adapter 경계를 둔다. Push payload에는 `callSessionId`와 안전한 `displayName`만 포함한다.
+Apple Developer Program과 APNs 설정은 실기기 검증 전에 사용자가 준비한다. iOS VoIP Push와 CallKit은 MVP에 포함하고, Android는 FCM과 system-managed Telecom을 사용하도록 별도 native adapter 경계를 둔다. Push payload에는 `callSessionId`와 안전한 `displayName`만 포함한다.
 
-- [ ] **단계 4: answer/end callback을 Dart로 전달**
+- [x] **단계 4: answer/end callback을 Dart로 전달**
 
 `callSessionId`를 Dart로 내보낸다. 플랫폼 내부의 CallKit UUID나 Telecom 식별자는 공통 계층에 노출하지 않는다. 사용자가 응답하기 전에는 연결 token을 요청하지 않는다.
 
-- [ ] **단계 5: 테스트와 iOS simulator smoke check 실행**
+- [x] **단계 5: 테스트와 iOS simulator smoke check 실행**
 
 실행: `flutter test test/call/application/incoming_call_service_test.dart` 및 `flutter build ios --no-codesign`
 
