@@ -35,6 +35,10 @@ assert_contains "REDIS_HOST: redis"
 assert_contains "ONCUE_AUTH_X_CLIENT_ID: replace-with-a-local-x-client-id"
 assert_contains "X_REDIRECT_URI: com.oncue.oncuemobile://oauth/x/callback"
 assert_contains "VOICE_INTERNAL_SERVICE_TOKEN: replace-with-a-local-voice-token"
+assert_contains "APNS_KEY_ID: replace-with-local-apns-key-id"
+assert_contains "APNS_TEAM_ID: replace-with-local-apple-team-id"
+assert_contains "APNS_BUNDLE_ID: com.oncue.oncueMobile"
+assert_contains "APNS_PRIVATE_KEY_FILE: /run/secrets/apns-auth-key.p8"
 assert_contains 'VOICE_JWT_PRIVATE_KEY: ""'
 assert_contains "ONCUE_VOICE_SIGNALING_URL: ws://localhost:8000/v1/signaling"
 assert_contains 'ONCUE_VOICE_JWT_PUBLIC_KEY: ""'

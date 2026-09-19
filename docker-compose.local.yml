@@ -45,12 +45,18 @@ services:
       VOICE_JWT_PRIVATE_KEY: ${VOICE_JWT_PRIVATE_KEY}
       VOICE_SERVER_URL: http://oncue-voice:8000
       VOICE_INTERNAL_SERVICE_TOKEN: ${VOICE_INTERNAL_SERVICE_TOKEN}
+      APNS_KEY_ID: ${APNS_KEY_ID}
+      APNS_TEAM_ID: ${APNS_TEAM_ID}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID}
+      APNS_PRIVATE_KEY_FILE: /run/secrets/apns-auth-key.p8
       ONCUE_VOICE_SIGNALING_URL: ${ONCUE_VOICE_SIGNALING_URL}
       ONCUE_VOICE_ICE_SERVERS_URLS: stun:localhost:${TURN_PORT},turn:localhost:${TURN_PORT}?transport=udp,turn:localhost:${TURN_PORT}?transport=tcp
       ONCUE_VOICE_ICE_SERVERS_USERNAME: ${TURN_USERNAME}
       ONCUE_VOICE_ICE_SERVERS_CREDENTIAL: ${TURN_CREDENTIAL}
     ports:
       - "${BACKEND_PORT}:8080"
+    volumes:
+      - ${APNS_SECRET_DIR_HOST:-./.secrets}:/run/secrets:ro
     depends_on:
       mysql:
         condition: service_healthy

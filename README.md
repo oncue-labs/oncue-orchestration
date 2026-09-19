@@ -24,6 +24,29 @@ openssl rsa -pubout -in /tmp/oncue-voice-private.pem -out /tmp/oncue-voice-publi
 
 운영 환경에서는 PEM을 환경 변수에 직접 넣지 말고 배포 환경의 비밀 저장소에서 주입한다.
 
+## 로컬 APNs PushKit 연결
+
+실제 iPhone으로 VoIP 푸시를 보내려면 Apple Developer에서 만든 APNs Auth Key
+(`.p8`)를 백엔드 컨테이너에 읽기 전용으로 연결해야 한다. 키 내용은 저장소나
+`.env`에 넣지 않는다.
+
+1. `.env`의 `APNS_KEY_ID`, `APNS_TEAM_ID`를 실제 값으로 바꾼다.
+2. `.env`의 `APNS_SECRET_DIR_HOST` 디렉터리를 만들고, 그 안에 키 파일을
+   `apns-auth-key.p8`라는 이름으로 둔다.
+
+```bash
+mkdir -p .secrets
+cp /path/to/AuthKey_XXXXXXXXXX.p8 .secrets/apns-auth-key.p8
+chmod 600 .secrets/apns-auth-key.p8
+```
+
+3. `ONCUE_APNS_ENVIRONMENT=SANDBOX`로 빌드한 개발 앱은 APNs Sandbox로,
+   TestFlight 앱은 `PRODUCTION`으로 등록되어야 한다. 이 값은 앱의 PushKit
+   토큰 등록 환경과 백엔드가 호출할 APNs 주소를 맞추는 데 사용된다.
+
+키가 아직 연결되지 않아도 컨테이너 자체는 실행되지만, 실제 수신 푸시 전송은
+`APNS_KEY_ID`, `APNS_TEAM_ID`, `.p8` 파일이 모두 준비된 뒤에만 성공한다.
+
 X 로그인은 OAuth 2.0 Authorization Code + PKCE를 사용한다. `.env`의
 `ONCUE_AUTH_X_CLIENT_ID`에는 X Developer Portal에서 발급한 Client ID를 입력하고,
 `X_REDIRECT_URI`는 X 콘솔과 동일한 아래 값으로 유지한다.
