@@ -114,6 +114,9 @@ POST /api/v1/reservations
   "reservationStatus": "SCHEDULED",
   "personaKey": "santa",
   "scenarioKey": "child-roleplay",
+  "displayName": "산타",
+  "personaImageUrl": "/assets/personas/santa.png",
+  "previewAudioUrl": "/assets/audio/santa-preview.mp3",
   "scheduledAtLocal": "2026-09-08T21:00:00",
   "timeZone": "Asia/Seoul",
   "scheduledAtUtc": "2026-09-08T12:00:00Z",
@@ -131,7 +134,7 @@ GET /api/v1/reservations
 GET /api/v1/reservations/{reservationId}
 ```
 
-사용자 본인의 예약만 반환한다. 상세 응답에는 예약 정보와 연결된 통화 상태를 포함할 수 있다.
+사용자 본인의 예약만 반환한다. 목록·상세 응답에는 예약 정보, 페르소나 표시 정보(`displayName`, `personaImageUrl`, `previewAudioUrl`), 연결된 통화 상태를 포함할 수 있다. 통화 세션이 준비된 뒤에는 `callSessionId`도 포함한다. `voiceSessionId`와 정책 스냅샷은 반환하지 않는다.
 
 ### 예약 수정
 
@@ -161,7 +164,9 @@ POST /api/v1/reservations/{reservationId}/cancel
 
 통화 준비 단계에서는 식별자·정책 스냅샷·provider 설정·만료 시각을 포함한 보이스 세션 준비 데이터를 만든다. 보이스 서버는 실제 STT·LLM·TTS provider 연결과 WebRTC 미디어 처리를 사용자가 전화를 받은 뒤 시작한다. 따라서 통화 준비 후 예정 시각까지 실제 음성 연결을 계속 유지하지 않는다.
 
-예약 생성·목록·상세 응답에서 아직 준비 시각에 도달하지 않았다면 `callSessionId`가 없을 수 있다. 세션이 준비된 뒤에는 통화 세션의 `callSessionId`를 조회할 수 있지만, `voiceSessionId`는 모바일에 노출하지 않는다.
+예약 시각이 되면 백엔드는 준비된 세션을 `PREPARING → RINGING`으로 전환한다. 현재 MVP 개발 단계에서는 이 상태를 자동 수신 알림으로 전달하지 않으며, PushKit 전송은 Apple Developer Program과 APNs 설정 이후의 후속 작업으로 둔다.
+
+예약 생성·목록·상세 응답에서 아직 준비 시각에 도달하지 않았다면 `callSessionId`가 없을 수 있다. 세션이 준비된 뒤에는 통화 세션의 `callSessionId`를 조회할 수 있지만, `voiceSessionId`는 모바일에 노출하지 않는다. CallKit 수신 정보에는 `callSessionId`와 `displayName`만 사용하며, 이미지·미리듣기 URL은 예약·조합 화면에서만 사용한다.
 
 ### 모바일 → 백엔드: 수신 거절
 
