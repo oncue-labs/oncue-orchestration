@@ -11,6 +11,14 @@ cp .env.example .env
 docker compose --env-file .env -f docker-compose.local.yml up --build
 ```
 
+실제 iPhone에서 통화 연결을 테스트할 때는 `.env`의 `ONCUE_PUBLIC_HOST`를
+Mac과 iPhone이 같은 Wi-Fi에서 접근할 수 있는 Mac의 LAN IP로 설정한다.
+`localhost`는 iPhone이 아니라 컨테이너 자신을 가리키므로 사용할 수 없다.
+모바일에 내려가는 signaling/TURN 주소는 이 값을 사용하고, 보이스 컨테이너가
+coturn에 접근하는 주소는 Compose 서비스명 `coturn`을 사용한다.
+coturn은 같은 값을 외부 relay 주소로 광고하므로, `TURN_RELAY_PORT_START`부터
+`TURN_RELAY_PORT_END`까지의 포트도 Mac 방화벽에서 허용되어야 한다.
+
 기본 stack에는 MySQL, Redis, `oncue-backend`, `oncue-voice`, coturn이 포함된다. Flutter 앱은 Docker에 넣지 않고 Xcode에서 실행한다.
 
 보이스 서버는 Redis에 짧은 수명의 보이스 세션 준비 정보와 1회성 연결 토큰의 사용 기록(JTI)을 저장한다. 그래서 앱 프로세스가 재시작되어도 진행 중인 짧은 통화 준비 상태를 복구할 수 있다.

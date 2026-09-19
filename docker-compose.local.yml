@@ -49,10 +49,11 @@ services:
       APNS_TEAM_ID: ${APNS_TEAM_ID}
       APNS_BUNDLE_ID: ${APNS_BUNDLE_ID}
       APNS_PRIVATE_KEY_FILE: /run/secrets/apns-auth-key.p8
-      ONCUE_VOICE_SIGNALING_URL: ${ONCUE_VOICE_SIGNALING_URL}
-      ONCUE_VOICE_ICE_SERVERS_URLS: stun:localhost:${TURN_PORT},turn:localhost:${TURN_PORT}?transport=udp,turn:localhost:${TURN_PORT}?transport=tcp
+      ONCUE_VOICE_SIGNALING_URL: ws://${ONCUE_PUBLIC_HOST}:${VOICE_PORT}/v1/signaling
+      ONCUE_VOICE_ICE_SERVERS_URLS: stun:${ONCUE_PUBLIC_HOST}:${TURN_PORT},turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=udp,turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=tcp
       ONCUE_VOICE_ICE_SERVERS_USERNAME: ${TURN_USERNAME}
       ONCUE_VOICE_ICE_SERVERS_CREDENTIAL: ${TURN_CREDENTIAL}
+      ONCUE_LOCAL_TEST_CALL_ENABLED: ${ONCUE_LOCAL_TEST_CALL_ENABLED:-true}
     ports:
       - "${BACKEND_PORT}:8080"
     volumes:
@@ -88,7 +89,7 @@ services:
       OPENAI_TTS_VOICE_ID: ${OPENAI_TTS_VOICE_ID}
       OPENAI_REALTIME_MODEL: ${OPENAI_REALTIME_MODEL}
       OPENAI_REALTIME_VOICE: ${OPENAI_REALTIME_VOICE}
-      ONCUE_VOICE_TURN_URLS: turn:localhost:3478?transport=udp,turn:localhost:3478?transport=tcp
+      ONCUE_VOICE_TURN_URLS: turn:coturn:3478?transport=udp,turn:coturn:3478?transport=tcp
       ONCUE_VOICE_TURN_USERNAME: ${TURN_USERNAME}
       ONCUE_VOICE_TURN_CREDENTIAL: ${TURN_CREDENTIAL}
     ports:
@@ -111,6 +112,7 @@ services:
       - --user=${TURN_USERNAME}:${TURN_CREDENTIAL}
       - --min-port=${ONCUE_TURN_MIN_PORT}
       - --max-port=${ONCUE_TURN_MAX_PORT}
+      - --external-ip=${ONCUE_PUBLIC_HOST}
     volumes:
       - ../../oncue-voice/docker/turn/coturn.conf:/etc/coturn/turnserver.conf:ro
     ports:
