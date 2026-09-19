@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="산타부터 친구까지, 원하는 순간 AI 페르소나에게 진짜 전화처럼 연락을 받아보세요."
+    />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <title>OnCue</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #11131a;
+        --surface: #1b1e29;
+        --surface-light: #252a39;
+        --text: #f7f4ed;
+        --muted: #a8adbb;
+        --accent: #ffb86b;
+        --accent-strong: #ff8f5b;
+        --line: rgba(255, 255, 255, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 80% 0%, rgba(255, 143, 91, 0.14), transparent 32rem),
+          var(--background);
+        color: var(--text);
+        font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        line-height: 1.6;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(100% - 40px, 960px);
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 28px 0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .brand-mark {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+      }
+
+      .badge {
+        border: 1px solid rgba(255, 184, 107, 0.35);
+        border-radius: 999px;
+        color: var(--accent);
+        font-size: 0.78rem;
+        padding: 5px 10px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 36px;
+        grid-template-columns: 1.1fr 0.9fr;
+        align-items: center;
+        min-height: 520px;
+        padding: 72px 0 92px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 620px;
+        margin-bottom: 20px;
+        font-size: clamp(2.8rem, 7vw, 5.8rem);
+        line-height: 1.06;
+        letter-spacing: -0.08em;
+      }
+
+      .hero-copy {
+        max-width: 500px;
+        color: var(--muted);
+        font-size: 1.12rem;
+      }
+
+      .call-preview {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: linear-gradient(145deg, var(--surface-light), var(--surface));
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.3);
+        padding: 28px;
+        transform: rotate(3deg);
+      }
+
+      .call-preview::after {
+        position: absolute;
+        width: 180px;
+        height: 180px;
+        right: -50px;
+        bottom: -70px;
+        border-radius: 50%;
+        background: var(--accent-strong);
+        content: "";
+        opacity: 0.22;
+      }
+
+      .call-label {
+        color: var(--accent);
+        font-size: 0.8rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .caller {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 58px 0 34px;
+      }
+
+      .avatar {
+        display: grid;
+        width: 68px;
+        height: 68px;
+        place-items: center;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #ffd69a, #ff8f5b);
+        color: #301b19;
+        font-size: 2rem;
+      }
+
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .caller-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .caller-status {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .call-brief {
+        display: grid;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .brief-item {
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+      }
+
+      .brief-label {
+        display: block;
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      .brief-copy {
+        margin: 3px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
+
+      .pulse {
+        display: flex;
+        gap: 5px;
+        align-items: end;
+        height: 36px;
+      }
+
+      .pulse span {
+        width: 5px;
+        border-radius: 999px;
+        background: var(--accent);
+        animation: pulse 1.1s ease-in-out infinite alternate;
+      }
+
+      .pulse span:nth-child(1) { height: 12px; }
+      .pulse span:nth-child(2) { height: 26px; animation-delay: 0.2s; }
+      .pulse span:nth-child(3) { height: 18px; animation-delay: 0.4s; }
+      .pulse span:nth-child(4) { height: 32px; animation-delay: 0.6s; }
+
+      @keyframes pulse {
+        to { transform: scaleY(0.45); opacity: 0.55; }
+      }
+
+      section {
+        padding: 70px 0;
+      }
+
+      .section-kicker {
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        margin-bottom: 28px;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        letter-spacing: -0.06em;
+      }
+
+      .steps,
+      .personas {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .steps {
+        position: relative;
+      }
+
+      .step,
+      .persona {
+        min-height: 150px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 20px;
+      }
+
+      .step {
+        position: relative;
+        min-height: 190px;
+      }
+
+      .step:not(:last-child)::after {
+        position: absolute;
+        top: 50%;
+        right: -15px;
+        color: var(--accent);
+        content: "→";
+        font-size: 1.2rem;
+        transform: translateY(-50%);
+      }
+
+      .step-number {
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+
+      .step strong,
+      .persona strong {
+        display: block;
+        margin-top: 24px;
+        font-size: 1.05rem;
+      }
+
+      .step small {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+
+      .step-example {
+        display: grid;
+        gap: 3px;
+        margin-top: 16px;
+        border-left: 2px solid var(--accent);
+        padding-left: 10px;
+      }
+
+      .step-example span {
+        color: var(--accent);
+        font-size: 0.7rem;
+        font-weight: 700;
+      }
+
+      .step-example p {
+        overflow: hidden;
+        margin: 0 0 7px;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.4;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .persona {
+        min-height: 190px;
+        background: linear-gradient(145deg, rgba(255, 184, 107, 0.13), rgba(255, 255, 255, 0.03));
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+
+      .persona:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255, 184, 107, 0.35);
+        background: linear-gradient(145deg, rgba(255, 184, 107, 0.18), rgba(255, 255, 255, 0.05));
+      }
+
+      .persona-icon {
+        font-size: 1.65rem;
+      }
+
+      .persona .persona-icon + strong {
+        margin-top: 16px;
+      }
+
+      .persona span {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .cta {
+        margin: 70px 0 32px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        color: #281718;
+        padding: 44px 28px;
+        text-align: center;
+      }
+
+      .cta h2 {
+        margin-bottom: 20px;
+      }
+
+      .cta-button {
+        display: inline-block;
+        transition: transform 180ms ease, box-shadow 180ms ease;
+        border-radius: 999px;
+        background: #211719;
+        color: var(--text);
+        font-weight: 700;
+        padding: 13px 22px;
+        text-decoration: none;
+      }
+
+      .cta-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(33, 23, 25, 0.24);
+      }
+
+      .cta-note {
+        margin: 14px 0 0;
+        color: rgba(40, 23, 24, 0.72);
+        font-size: 0.88rem;
+      }
+
+      footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.82rem;
+        padding: 24px 0 36px;
+      }
+
+      .footer-links a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 16px;
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(100% - 28px, 560px);
+        }
+
+        .hero {
+          grid-template-columns: 1fr;
+          min-height: auto;
+          padding: 60px 0 40px;
+        }
+
+        .call-preview {
+          margin: 12px 18px 0;
+        }
+
+        .steps,
+        .personas {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .step:not(:last-child)::after {
+          display: none;
+        }
+
+        footer {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="brand">
+          <img class="brand-mark" src="assets/favicon.png" alt="OnCue 로고" />
+          <span>OnCue</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="hero-title">
+          <div>
+            <h1 id="hero-title">산타도 친구도, <br/> 원하는 순간에 불러볼까요?</h1>
+            <p class="hero-copy">
+              원하는 시간에, 원하는 페르소나에게 전화를 예약해보세요.
+              당신을 위한 짧은 대화가 휴대폰으로 찾아옵니다.
+            </p>
+          </div>
+
+          <div class="call-preview" aria-label="OnCue 수신 전화 미리보기">
+            <div class="call-label">Incoming call</div>
+            <div class="caller">
+              <div class="avatar"><img src="assets/favicon.png" alt="산타 할아버지" /></div>
+              <div>
+                <div class="caller-name">산타 할아버지</div>
+              </div>
+            </div>
+            <div class="call-brief">
+              <div class="brief-item">
+                <span class="brief-label">상황</span>
+                <p class="brief-copy">12살 민수가 빨리 잤으면 좋겠어요! 1주일 전부터 노래를 부르네요.</p>
+              </div>
+              <div class="brief-item">
+                <span class="brief-label">통화 목표</span>
+                <p class="brief-copy">민수가 오늘은 일찍 잠들 수 있게 도와주세요.</p>
+              </div>
+            </div>
+            <div class="pulse" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="steps-title">
+          <h2 id="steps-title">원하는 전화 한 통을 만드는 4단계</h2>
+          <div class="steps">
+            <div class="step">
+              <span class="step-number">01</span>
+              <strong>오늘은 어떤 목소리를 만나볼까요?</strong>
+              <small>산타부터 친구까지, 마음에 드는 페르소나를 골라보세요.</small>
+            </div>
+            <div class="step">
+              <span class="step-number">02</span>
+              <strong>이번 전화에 어떤 이야기를 담아볼까요?</strong>
+              <small>상황과 통화 목표를 입력해보세요.</small>
+              <div class="step-example">
+                <span>상황</span>
+                <p>12살 민수가 빨리 잤으면 좋겠어요...</p>
+                <span>통화 목표</span>
+                <p>오늘은 일찍 잠들 수 있게 도와주세요.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-number">03</span>
+              <strong>언제 그 전화가 오면 좋을까요?</strong>
+              <small>원하는 순간을 예약해보세요.</small>
+            </div>
+            <div class="step">
+              <span class="step-number">04</span>
+              <strong>전화를 받는 순간, 이야기가 시작돼요.</strong>
+              <small>휴대폰으로 대화를 시작해보세요.</small>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="personas-title">
+          <h2 id="personas-title">어떤 순간에 전화가 필요할까요?</h2>
+          <div class="personas">
+            <div class="persona"><div class="persona-icon">🎅</div><strong>“민준아, 산타 할아버지야!”</strong><span>크리스마스를 기다리는 아이에게 산타의 깜짝 전화</span></div>
+            <div class="persona"><div class="persona-icon">👸</div><strong>“오늘은 어떤 모험을 했어?”</strong><span>좋아하는 캐릭터와 직접 이야기하는 특별한 순간</span></div>
+            <div class="persona"><div class="persona-icon">📞</div><strong>“야, 지금 집에 좀 와야 할 것 같은데?”</strong><span>회식에서 슬슬 빠져나오고 싶은 순간 도착하는 친구의 전화</span></div>
+            <div class="persona"><div class="persona-icon">🧳</div><strong>“어머님, 저랑 같이 여행 왔어요!”</strong><span>여행 중 필요한 상황에 맞춰 걸려오는 친구의 전화</span></div>
+          </div>
+        </section>
+
+        <section class="cta" id="testflight" aria-labelledby="cta-title">
+          <h2 id="cta-title">직접 전화를 받아보고 싶다면</h2>
+          <!-- Replace the anchor with the actual TestFlight invitation URL. -->
+          <a class="cta-button" href="#testflight">TestFlight로 먼저 써보기</a>
+          <p class="cta-note">iPhone 전용 · 초기 테스트 사용자 모집 중</p>
+        </section>
+      </main>
+
+      <footer>
+        <span>OnCue · early access</span>
+        <nav class="footer-links" aria-label="관련 링크">
+          <a href="https://github.com/orgs/oncue-labs/repositories" target="_blank" rel="noreferrer">GitHub 프로젝트</a>
+          <a href="https://www.linkedin.com/in/juyeon-kim-6a227a207/" target="_blank" rel="noreferrer">LinkedIn</a>
+        </nav>
+        <span>© 2026 OnCue</span>
+      </footer>
+    </div>
+  </body>
+</html>
