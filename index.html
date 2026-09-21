@@ -376,6 +376,86 @@
         font-size: 0.88rem;
       }
 
+      .waitlist {
+        margin: 28px 0 32px;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        padding: 36px 28px;
+        text-align: center;
+      }
+
+      .waitlist h2 {
+        margin-bottom: 10px;
+      }
+
+      .waitlist p.lead {
+        color: var(--muted);
+        margin: 0 auto 24px;
+        max-width: 480px;
+      }
+
+      .waitlist-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        max-width: 420px;
+        margin: 0 auto;
+      }
+
+      .waitlist-form input[type="email"] {
+        flex: 1 1 240px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--surface-light);
+        color: var(--text);
+        padding: 13px 18px;
+        font-size: 0.95rem;
+      }
+
+      .waitlist-form input[type="email"]:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .waitlist-form button {
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        color: #281718;
+        font-weight: 700;
+        padding: 13px 22px;
+        cursor: pointer;
+        transition: transform 180ms ease, box-shadow 180ms ease;
+      }
+
+      .waitlist-form button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(255, 143, 91, 0.24);
+      }
+
+      .waitlist-form button:disabled {
+        opacity: 0.6;
+        cursor: default;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .waitlist-status {
+        margin-top: 14px;
+        font-size: 0.88rem;
+        min-height: 1.2em;
+      }
+
+      .waitlist-status[data-state="success"] {
+        color: var(--accent);
+      }
+
+      .waitlist-status[data-state="error"] {
+        color: #ff8b8b;
+      }
+
       footer {
         display: flex;
         justify-content: space-between;
@@ -517,6 +597,32 @@
           <p class="cta-note">iPhone 전용 · 초기 테스트 사용자 모집 중</p>
           <p class="cta-note">*비고: 9/20 기준 베타 앱이 심사 중입니다. 1~2일 정도 소요될 수 있으니 양해 부탁드립니다.</p>
         </section>
+
+        <section class="waitlist" id="waitlist" aria-labelledby="waitlist-title">
+          <h2 id="waitlist-title">베타 심사가 끝나면 바로 알려드릴게요</h2>
+          <p class="lead">
+            지금 이메일을 남겨주시면 TestFlight 심사가 통과되는 대로 설치
+            안내를 보내드려요.
+          </p>
+          <form
+            class="waitlist-form"
+            id="waitlist-form"
+            action="https://formspree.io/f/mvkgkrvb"
+            method="POST"
+          >
+            <input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              required
+              aria-label="이메일 주소"
+            />
+            <input type="hidden" name="_subject" value="OnCue 베타 알림 신청" />
+            <input type="text" name="_gotcha" style="display: none" tabindex="-1" autocomplete="off" />
+            <button type="submit">알림 받기</button>
+          </form>
+          <p class="waitlist-status" id="waitlist-status" role="status"></p>
+        </section>
       </main>
 
       <footer>
@@ -529,5 +635,40 @@
         <span>© 2026 OnCue</span>
       </footer>
     </div>
+    <script>
+      (function () {
+        const form = document.getElementById("waitlist-form");
+        const status = document.getElementById("waitlist-status");
+        if (!form || !status) {
+          return;
+        }
+        form.addEventListener("submit", async function (event) {
+          event.preventDefault();
+          const submitButton = form.querySelector("button[type=submit]");
+          submitButton.disabled = true;
+          status.dataset.state = "";
+          status.textContent = "";
+          try {
+            const response = await fetch(form.action, {
+              method: "POST",
+              body: new FormData(form),
+              headers: { Accept: "application/json" },
+            });
+            if (response.ok) {
+              status.dataset.state = "success";
+              status.textContent = "등록됐어요! 심사 통과되면 이메일로 알려드릴게요.";
+              form.reset();
+            } else {
+              throw new Error("submission failed");
+            }
+          } catch (error) {
+            status.dataset.state = "error";
+            status.textContent = "전송에 실패했어요. 잠시 후 다시 시도해주세요.";
+          } finally {
+            submitButton.disabled = false;
+          }
+        });
+      })();
+    </script>
   </body>
 </html>
