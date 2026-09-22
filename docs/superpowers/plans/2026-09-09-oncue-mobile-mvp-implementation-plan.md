@@ -95,7 +95,7 @@ Kakao/X 로그인 성공, access token 저장, 만료 token 처리, 401 logout, 
 
 - [ ] **단계 3: provider 공통 인증과 API transport 구현**
 
-Kakao/X provider 세부 사항은 auth adapter 안에 둔다. Kakao adapter는 네이티브 SDK가 받은 `providerAccessToken`을 백엔드에 전달하고, X adapter는 authorization code와 PKCE `codeVerifier`를 전달한다. 백엔드 access token을 `Authorization: Bearer`에 넣고 보이스 시그널링 요청에는 넣지 않는다. MVP에서는 refresh token을 저장하거나 갱신하지 않는다.
+Kakao/X provider 세부 사항은 auth adapter 안에 둔다. Kakao adapter는 네이티브 SDK가 받은 `providerAccessToken`을 백엔드에 전달하고, X adapter는 authorization code와 PKCE `codeVerifier`를 전달한다. X adapter는 백엔드 access/refresh token pair를 Secure Storage에 저장하고, access token 만료 시 refresh endpoint를 한 번 호출해 원 요청을 재시도한다. 두 토큰이 모두 유효하지 않으면 세션을 지우고 로그인 화면으로 전환한다. 백엔드 access token을 `Authorization: Bearer`에 넣고 보이스 시그널링 요청에는 넣지 않는다.
 
 - [ ] **단계 4: 테스트 실행 및 통과 확인**
 

@@ -61,11 +61,19 @@ Kakao iOS custom scheme은 Kakao native app key에 따라 `kakao{nativeAppKey}`�
 {
   "accessToken": "...",
   "expiresAt": "2026-09-08T13:00:00Z",
-  "createdAt": "2026-09-08T12:00:00Z"
+  "createdAt": "2026-09-08T12:00:00Z",
+  "refreshToken": "...",
+  "refreshTokenExpiresAt": "2026-10-08T12:00:00Z"
 }
 ```
 
-MVP에서는 OnCue `refreshToken`을 발급하거나 받지 않는다. `accessToken`이 만료되면 모바일은 저장된 세션을 삭제하고 사용자가 다시 로그인한다. refresh token을 도입할 때는 재발급 endpoint, 회전·폐기 정책, 모바일 보안 저장소 변경을 별도 버전에서 함께 정의한다.
+`POST /api/v1/auth/refresh`는 `refreshToken`을 받아 새 access/refresh pair를 반환한다. 기존
+refresh token은 성공한 순간 폐기하며, 원문은 백엔드 DB에 저장하지 않는다. `401` 또는 `403`이
+반환되면 모바일은 저장 세션을 삭제하고 로그인 화면으로 이동한다. 네트워크·서버 오류만으로는
+세션을 삭제하지 않는다.
+
+`POST /api/v1/auth/logout`은 모바일이 보관한 refresh token을 폐기한다. 모바일은 로그아웃
+과정에서 서버 폐기 실패가 발생해도 로컬 세션을 삭제한다.
 
 ### 모바일 → 백엔드: iOS PushKit 기기 토큰 등록
 
