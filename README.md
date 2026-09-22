@@ -66,6 +66,12 @@ com.oncue.oncuemobile://oauth/x/callback
 Native App의 Client Secret은 모바일에 넣지 않는다. 현재 MVP에서는 PKCE를 사용하므로
 Client ID만 모바일과 백엔드에 전달한다.
 
+로그인 응답에는 OnCue access token과 refresh token이 함께 포함된다. 모바일은 access
+token이 만료되어 백엔드가 `401`을 반환하면 refresh endpoint를 한 번 호출하고 원래
+요청을 한 번 재시도한다. refresh token도 만료되거나 폐기된 경우 저장된 세션을 삭제하고
+로그인 화면으로 돌아간다. refresh token은 모바일 Secure Storage와 백엔드의 해시 값으로만
+관리한다.
+
 ```bash
 docker compose --env-file .env -f docker-compose.local.yml --profile local-llm up --build
 ```

@@ -139,7 +139,7 @@ Java 21, Spring Boot 3.2.3, Web, Validation, Security, JPA, Redis, Flyway, MySQL
 
 - [ ] **단계 3: auth 서비스와 provider 경계 구현**
 
-Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그인 시 사용자를 생성하며 백엔드 access token을 발급한다. Kakao client는 모바일이 전달한 provider access token으로 Kakao 사용자 정보를 확인하고, X client는 authorization code와 codeVerifier로 provider token을 교환한다. provider별 HTTP 응답 파싱은 각 `identity_provider` client 안에 둔다. MVP에서는 refresh token을 발급하지 않는다.
+Kakao/X 외부 identity를 `user_login_accounts`에 매핑하고, 최초 로그인 시 사용자를 생성하며 백엔드 access/refresh token pair를 발급한다. Kakao client는 모바일이 전달한 provider access token으로 Kakao 사용자 정보를 확인하고, X client는 authorization code와 codeVerifier로 provider token을 교환한다. provider별 HTTP 응답 파싱은 각 `identity_provider` client 안에 둔다. refresh token은 해시만 저장하고, refresh 요청마다 기존 토큰을 폐기한 뒤 새 pair를 회전 발급한다.
 
 - [ ] **단계 4: controller와 보안 필터 추가**
 
