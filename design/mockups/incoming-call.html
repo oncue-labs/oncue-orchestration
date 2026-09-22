@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>수신 전화 · OnCue 목업</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <style>
+      .ios-call-screen {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 184, 107, 0.18), transparent 55%),
+          linear-gradient(165deg, #2b2f3d, #0c0d12 70%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: #ffffff;
+      }
+
+      .ios-call-screen::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+      }
+
+      .ios-status-time {
+        position: relative;
+        z-index: 1;
+        margin-top: 16px;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .ios-caller-block {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        margin-top: 68px;
+      }
+
+      .ios-caller-name {
+        font-size: 1.7rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .ios-caller-sub {
+        font-size: 0.94rem;
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      .ios-avatar {
+        position: relative;
+        z-index: 1;
+        margin-top: 56px;
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        display: grid;
+        place-items: center;
+      }
+
+      .ios-avatar svg {
+        width: 68px;
+        height: 68px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .ios-actions {
+        position: relative;
+        z-index: 1;
+        margin-top: auto;
+        margin-bottom: 56px;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 46px;
+      }
+
+      .ios-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .ios-action-btn {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      }
+
+      .ios-action-btn.is-decline {
+        background: #ff3b30;
+      }
+
+      .ios-action-btn.is-accept {
+        background: #34c759;
+      }
+
+      .ios-action-btn svg {
+        width: 30px;
+        height: 30px;
+        color: #ffffff;
+      }
+
+      .ios-action span {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      /* Returning-to-app status pill (post-answer) */
+
+      .status-pill {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #34c759;
+        color: #06210d;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 999px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+      }
+
+      .status-pill svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* In-call screen (OnCue's own, after the call connects) */
+
+      .in-call-screen {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: #ffffff;
+      }
+
+      .in-call-photo {
+        position: absolute;
+        inset: 0;
+      }
+
+      .in-call-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .in-call-scrim {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          rgba(5, 6, 10, 0.75) 0%,
+          rgba(5, 6, 10, 0.1) 32%,
+          rgba(5, 6, 10, 0.25) 60%,
+          rgba(5, 6, 10, 0.85) 100%
+        );
+      }
+
+      .in-call-info {
+        position: relative;
+        z-index: 1;
+        margin-top: 44px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .in-call-name {
+        font-size: 1.55rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .in-call-timer {
+        font-size: 0.92rem;
+        color: rgba(255, 255, 255, 0.75);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .in-call-controls {
+        position: relative;
+        z-index: 1;
+        margin-top: auto;
+        margin-bottom: 56px;
+        display: flex;
+        gap: 24px;
+      }
+
+      .in-call-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .in-call-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .in-call-btn.is-end {
+        background: #ff3b30;
+        border-color: transparent;
+      }
+
+      .in-call-btn svg {
+        width: 24px;
+        height: 24px;
+        color: #ffffff;
+      }
+
+      .in-call-action span {
+        font-size: 0.76rem;
+        color: rgba(255, 255, 255, 0.85);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <header class="mockup-header">
+        <span class="mockup-kicker">10 · Incoming call</span>
+        <h1>수신 전화 (시스템 화면)</h1>
+        <p>
+          예약 시각에 앱이 PushKit으로 깨어나 CallKit에 통화를 등록하면, 잠금화면 · 백그라운드에서는
+          iOS가 직접 그리는 시스템 화면이 뜹니다. 발신자 이름(예: "산타 할아버지")은 항상 안정적으로
+          표시되지만, 페르소나 사진은 iOS의 Contacts 연동 없이는 조건부로만 뜨는 기능이라 신뢰할 수
+          없습니다. 그래서 <strong>시스템 화면은 이름 중심으로, 페르소나 사진은 통화가 연결된 뒤 OnCue
+          자체 화면에서</strong> 보여주는 방향으로 설계했습니다.
+        </p>
+        <nav class="mockup-nav">
+          <a href="index.html">전체 목록</a>
+          <a href="auth-gate.html">로그인 확인</a>
+          <a href="login.html">로그인</a>
+          <a href="home.html">홈 셸</a>
+          <a href="combination-list.html">조합 목록</a>
+          <a href="combination-detail.html">조합 상세</a>
+          <a href="reservation-form.html">예약 폼</a>
+          <a href="permission-guide.html">권한 안내</a>
+          <a href="reservation-list.html">예약 목록</a>
+          <a href="reservation-detail.html">예약 상세</a>
+          <a class="current" href="incoming-call.html">수신 전화</a>
+          <a href="design-system.html">디자인 시스템</a>
+        </nav>
+      </header>
+
+      <div class="state-gallery">
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 수신 중 (잠금화면 / 백그라운드)</span>
+          <div class="phone-frame">
+            <div class="ios-call-screen">
+              <div class="ios-status-time">9:41</div>
+              <div class="ios-caller-block">
+                <div class="ios-caller-name">산타 할아버지</div>
+                <div class="ios-caller-sub">OnCue 음성 통화</div>
+              </div>
+              <div class="ios-avatar">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.5h19.6v-2.5c0-3.3-6.5-4.9-9.8-4.9z"/></svg>
+              </div>
+              <div class="ios-actions">
+                <div class="ios-action">
+                  <div class="ios-action-btn is-decline">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 3.67c.18.18.29.43.29.71 0 .27-.11.52-.29.7l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.1-.7-.28a11.4 11.4 0 0 0-2.66-1.85.99.99 0 0 1-.56-.9v-3.1A17.6 17.6 0 0 0 12 9z" transform="rotate(135 12 12)"/></svg>
+                  </div>
+                  <span>거절</span>
+                </div>
+                <div class="ios-action">
+                  <div class="ios-action-btn is-accept">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.4 21 3 13.6 3 4.5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>
+                  </div>
+                  <span>수락</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="state-note">
+            발신 표시 이름은 예약 통화 조합의 페르소나 이름(예: "산타 할아버지")을 그대로 전달합니다.
+            부제는 CallKit이 앱 이름을 붙여 자동으로 만들어주는 부분이라 커스텀 문구를 넣을 수 없고,
+            사진도 iOS Contacts에 저장된 연락처가 아니면 표시되지 않아 기본 아이콘으로 고정됩니다 —
+            그래서 이름 하나만으로도 충분히 전달되도록 문구를 설계하는 게 중요합니다.
+          </p>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 통화 연결 후 (OnCue 자체 화면)</span>
+          <div class="phone-frame">
+            <div class="status-pill">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.4 21 3 13.6 3 4.5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>
+              통화 중 · 앱으로 돌아가기
+            </div>
+            <div class="in-call-screen">
+              <div class="in-call-photo"><img src="images/personas/santa.png" alt="산타 할아버지" /></div>
+              <div class="in-call-scrim"></div>
+              <div class="status-bar" style="position: relative; z-index: 1; padding-top: 46px; color: #fff">
+                <span>9:41</span><span class="dot">●●●</span>
+              </div>
+              <div class="in-call-info">
+                <div class="in-call-name">산타 할아버지</div>
+                <div class="in-call-timer">00:14</div>
+              </div>
+              <div class="in-call-controls">
+                <div class="in-call-action">
+                  <div class="in-call-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M16.95 16.95A7 7 0 0 1 5 12v-2"/><path d="M18.89 13.23A7 7 0 0 0 19 12v-2"/><path d="m2 2 20 20"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/></svg>
+                  </div>
+                  <span>음소거</span>
+                </div>
+                <div class="in-call-action">
+                  <div class="in-call-btn is-end">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 3.67c.18.18.29.43.29.71 0 .27-.11.52-.29.7l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.1-.7-.28a11.4 11.4 0 0 0-2.66-1.85.99.99 0 0 1-.56-.9v-3.1A17.6 17.6 0 0 0 12 9z" transform="rotate(135 12 12)"/></svg>
+                  </div>
+                  <span>종료</span>
+                </div>
+                <div class="in-call-action">
+                  <div class="in-call-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg>
+                  </div>
+                  <span>스피커</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="state-note">
+            수락 즉시 iOS는 상단에 초록색 "통화 중" 배너를 계속 띄워주고, 그 아래 실제 화면은 OnCue가
+            완전히 자유롭게 그립니다. 이때는 제약이 없으니 페르소나 사진을 전체 화면 배경으로 크게 보여주고,
+            이름 · 타이머 · 음소거/종료/스피커 컨트롤을 얹었습니다.
+          </p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

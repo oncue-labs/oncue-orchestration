@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>통화 권한 안내 · OnCue 목업</title>
+    <link rel="stylesheet" href="tokens.css" />
+  </head>
+  <body>
+    <div class="mockup-page">
+      <header class="mockup-header">
+        <span class="mockup-kicker">07 · Permission guide</span>
+        <h1>통화 권한 안내</h1>
+        <p>예약 저장 중 통화 권한이 없다는 게 확인되면 이 화면으로 이동합니다.</p>
+        <nav class="mockup-nav">
+          <a href="index.html">전체 목록</a>
+          <a href="auth-gate.html">로그인 확인</a>
+          <a href="login.html">로그인</a>
+          <a href="home.html">홈 셸</a>
+          <a href="combination-list.html">조합 목록</a>
+          <a href="combination-detail.html">조합 상세</a>
+          <a href="reservation-form.html">예약 폼</a>
+          <a class="current" href="permission-guide.html">권한 안내</a>
+          <a href="reservation-list.html">예약 목록</a>
+          <a href="reservation-detail.html">예약 상세</a>
+          <a href="incoming-call.html">수신 전화</a>
+          <a href="design-system.html">디자인 시스템</a>
+        </nav>
+      </header>
+
+      <div class="state-gallery">
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 기본</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>통화 권한 안내</h2></div>
+            <div class="screen-body stack-16">
+              <div class="card" style="text-align: center; padding: 28px 18px">
+                <span class="icon-badge is-accent" style="margin: 0 auto"><svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+                <p style="margin: 14px 0 0; font-weight: 700">예약된 전화를 받으려면</p>
+                <p class="text-muted" style="margin: 6px 0 0">통화 권한과 시스템 통화 기능이 필요해요.</p>
+              </div>
+              <div class="btn-primary">권한 확인하기</div>
+              <div class="btn-text" style="width: 100%">설정에서 직접 확인하기</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-loading">상태 · 권한 확인 중</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>통화 권한 안내</h2></div>
+            <div class="screen-body stack-16">
+              <div class="card" style="text-align: center; padding: 28px 18px">
+                <span class="icon-badge is-accent" style="margin: 0 auto"><svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+                <p style="margin: 14px 0 0; font-weight: 700">예약된 전화를 받으려면</p>
+                <p class="text-muted" style="margin: 6px 0 0">통화 권한과 시스템 통화 기능이 필요해요.</p>
+              </div>
+              <div class="btn-primary is-disabled" style="display: flex; align-items: center; justify-content: center; gap: 8px">
+                <span class="spinner" style="width: 16px; height: 16px; border-width: 2px"></span> 확인 중
+              </div>
+              <div class="btn-text is-disabled" style="width: 100%">설정에서 직접 확인하기</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-error">상태 · 권한 준비 실패</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>통화 권한 안내</h2></div>
+            <div class="screen-body stack-16">
+              <div class="card" style="text-align: center; padding: 28px 18px">
+                <span class="icon-badge is-accent" style="margin: 0 auto"><svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+                <p style="margin: 14px 0 0; font-weight: 700">예약된 전화를 받으려면</p>
+                <p class="text-muted" style="margin: 6px 0 0">통화 권한과 시스템 통화 기능이 필요해요.</p>
+              </div>
+              <div class="error-banner">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                <p class="error-text">필수 권한이 준비되지 않았습니다.</p>
+              </div>
+              <div class="btn-primary">권한 확인하기</div>
+              <div class="btn-text" style="width: 100%">설정에서 직접 확인하기</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

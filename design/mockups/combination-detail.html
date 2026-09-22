@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>통화 조합 상세 · OnCue 목업</title>
+    <link rel="stylesheet" href="tokens.css" />
+  </head>
+  <body>
+    <div class="mockup-page">
+      <header class="mockup-header">
+        <span class="mockup-kicker">05 · Combination detail</span>
+        <h1>통화 조합 상세</h1>
+        <p>페르소나를 소개하고, 시나리오 컨텍스트 · 통화 목표를 입력받은 뒤 예약으로 넘어갑니다.</p>
+        <nav class="mockup-nav">
+          <a href="index.html">전체 목록</a>
+          <a href="auth-gate.html">로그인 확인</a>
+          <a href="login.html">로그인</a>
+          <a href="home.html">홈 셸</a>
+          <a href="combination-list.html">조합 목록</a>
+          <a class="current" href="combination-detail.html">조합 상세</a>
+          <a href="reservation-form.html">예약 폼</a>
+          <a href="permission-guide.html">권한 안내</a>
+          <a href="reservation-list.html">예약 목록</a>
+          <a href="reservation-detail.html">예약 상세</a>
+          <a href="incoming-call.html">수신 전화</a>
+          <a href="design-system.html">디자인 시스템</a>
+        </nav>
+      </header>
+
+      <div class="state-gallery">
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 입력 전</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>산타 할아버지</h2></div>
+            <div class="screen-body stack-16">
+              <div class="persona-hero"><img src="images/personas/santa.png" alt="산타 할아버지" /></div>
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.15rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화를 걸어줍니다.</p>
+              </div>
+              <div class="btn-outline is-disabled" style="display: flex; align-items: center; justify-content: center; gap: 6px">
+                ▶ 10초 미리듣기
+              </div>
+              <p class="text-hint" style="margin-top: 8px">음성 미리듣기는 준비 중입니다.</p>
+              <div class="field">
+                <label>시나리오 컨텍스트</label>
+                <div class="textarea">12살 민수가 빨리 잤으면 좋겠어요. 산타 할아버지가 선물을 주려면 얼른 자야 한다고 말해주세요.</div>
+              </div>
+              <div class="field">
+                <label>통화 목표</label>
+                <div class="textarea">민수가 오늘은 일찍 잠들 수 있게 도와주세요.</div>
+              </div>
+            </div>
+          </div>
+          <p class="state-note">textarea 안의 문구는 힌트(placeholder) 예시이며, 실제로는 옅은 색으로 표시됩니다.</p>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 입력 완료 + 예약 버튼</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>산타 할아버지</h2></div>
+            <div class="screen-body stack-16">
+              <div class="persona-hero"><img src="images/personas/santa.png" alt="산타 할아버지" /></div>
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.15rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화를 걸어줍니다.</p>
+              </div>
+              <div class="field">
+                <label>시나리오 컨텍스트</label>
+                <div class="textarea has-value">7살 하은이가 그림 그리기를 정말 좋아해요. 산타 할아버지가 그림 실력을 칭찬해주세요.</div>
+              </div>
+              <div class="field">
+                <label>통화 목표</label>
+                <div class="textarea has-value">하은이가 계속 그림을 즐겁게 그릴 수 있도록 응원해주세요.</div>
+              </div>
+              <div class="btn-primary">예약 정보 입력</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

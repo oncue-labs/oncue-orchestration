@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>디자인 시스템 · OnCue 목업</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <style>
+      .ds-section {
+        max-width: 920px;
+        margin: 0 auto 56px;
+      }
+
+      .ds-section h2 {
+        margin: 0 0 6px;
+        font-size: 1.2rem;
+        letter-spacing: -0.02em;
+      }
+
+      .ds-section .ds-desc {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 0.86rem;
+        max-width: 560px;
+      }
+
+      .ds-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+      }
+
+      .ds-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface);
+        padding: 18px;
+      }
+
+      .ds-card .ds-label {
+        display: block;
+        margin-bottom: 12px;
+        color: var(--muted-strong);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .component-stage {
+        position: relative;
+        overflow: hidden;
+        min-height: 160px;
+        border-radius: 16px;
+        background: var(--background);
+        border: 1px solid var(--line);
+      }
+
+      .component-stage.is-tall {
+        min-height: 260px;
+      }
+
+      .stage-fill {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <header class="mockup-header">
+        <span class="mockup-kicker">Design system</span>
+        <h1>버튼 · 모달 · 토스트</h1>
+        <p>화면마다 반복되는 버튼 · 모달(다이얼로그) · 에러/상태 토스트를 한곳에 모았습니다. 색상 · 타이포 등 기본 토큰은 tokens.css를 참고하세요.</p>
+        <nav class="mockup-nav">
+          <a href="index.html">전체 목록</a>
+          <a href="auth-gate.html">로그인 확인</a>
+          <a href="login.html">로그인</a>
+          <a href="home.html">홈 셸</a>
+          <a href="combination-list.html">조합 목록</a>
+          <a href="combination-detail.html">조합 상세</a>
+          <a href="reservation-form.html">예약 폼</a>
+          <a href="permission-guide.html">권한 안내</a>
+          <a href="reservation-list.html">예약 목록</a>
+          <a href="reservation-detail.html">예약 상세</a>
+          <a href="incoming-call.html">수신 전화</a>
+          <a class="current" href="design-system.html">디자인 시스템</a>
+        </nav>
+      </header>
+
+      <section class="ds-section">
+        <h2>버튼</h2>
+        <p class="ds-desc">Primary(강조) · Outline(보조) · Text(텍스트형) 세 종류. 각각 기본 · 비활성 상태를 가집니다.</p>
+        <div class="ds-grid">
+          <div class="ds-card">
+            <span class="ds-label">Primary · 기본</span>
+            <div class="btn-primary">예약하기</div>
+          </div>
+          <div class="ds-card">
+            <span class="ds-label">Primary · 비활성</span>
+            <div class="btn-primary is-disabled">예약하기</div>
+          </div>
+          <div class="ds-card">
+            <span class="ds-label">Outline · 기본</span>
+            <div class="btn-outline">예약 수정</div>
+          </div>
+          <div class="ds-card">
+            <span class="ds-label">Outline · 비활성</span>
+            <div class="btn-outline is-disabled">예약 수정</div>
+          </div>
+          <div class="ds-card">
+            <span class="ds-label">Text · 기본</span>
+            <div class="btn-text">돌아가기</div>
+          </div>
+          <div class="ds-card">
+            <span class="ds-label">Text · 위험(취소)</span>
+            <div class="btn-text btn-danger-text">예약 취소</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ds-section">
+        <h2>모달 (다이얼로그)</h2>
+        <p class="ds-desc">파괴적이거나 되돌리기 어려운 동작(예약 취소 등) 전에 사용하는 확인 다이얼로그입니다. 배경을 어둡게 덮고 화면 중앙에 뜹니다.</p>
+        <div class="component-stage is-tall">
+          <div class="dialog-overlay" style="position: absolute">
+            <div class="dialog-box">
+              <h3>예약을 취소할까요?</h3>
+              <p>취소한 예약은 다시 사용할 수 없습니다.</p>
+              <div class="dialog-actions">
+                <div class="btn-text">돌아가기</div>
+                <div class="btn-primary">예약 취소</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ds-section">
+        <h2>토스트 / 스낵바</h2>
+        <p class="ds-desc">화면 하단에 잠깐 떴다 사라지는 상태 알림입니다. 타입에 따라 색상과 아이콘이 달라집니다 — 에러(빨강 · 경고 삼각형), 성공(초록 · 체크), 안내(주황 · 정보).</p>
+        <div class="ds-grid">
+          <div class="ds-card">
+            <span class="ds-label">Error</span>
+            <div class="component-stage">
+              <div class="snackbar is-error" style="position: absolute; left: 16px; right: 16px; bottom: 16px">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                <span>예약을 취소하지 못했습니다. 다시 시도해주세요.</span>
+              </div>
+            </div>
+          </div>
+          <div class="ds-card">
+            <span class="ds-label">Success</span>
+            <div class="component-stage">
+              <div class="snackbar is-success" style="position: absolute; left: 16px; right: 16px; bottom: 16px">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></svg>
+                <span>예약이 저장됐어요.</span>
+              </div>
+            </div>
+          </div>
+          <div class="ds-card">
+            <span class="ds-label">Info</span>
+            <div class="component-stage">
+              <div class="snackbar is-info" style="position: absolute; left: 16px; right: 16px; bottom: 16px">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>예약 시각은 정확히 보장되지 않을 수 있어요.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

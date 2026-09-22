@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>로그인 상태 확인 · OnCue 목업</title>
+    <link rel="stylesheet" href="tokens.css" />
+  </head>
+  <body>
+    <div class="mockup-page">
+      <header class="mockup-header">
+        <span class="mockup-kicker">01 · Auth gate</span>
+        <h1>로그인 상태 확인</h1>
+        <p>앱 실행 직후 저장된 세션을 복원하는 동안 잠깐 보이는 화면입니다. 화면 자체에 앱바는 없습니다.</p>
+        <nav class="mockup-nav">
+          <a href="index.html">전체 목록</a>
+          <a class="current" href="auth-gate.html">로그인 확인</a>
+          <a href="login.html">로그인</a>
+          <a href="home.html">홈 셸</a>
+          <a href="combination-list.html">조합 목록</a>
+          <a href="combination-detail.html">조합 상세</a>
+          <a href="reservation-form.html">예약 폼</a>
+          <a href="permission-guide.html">권한 안내</a>
+          <a href="reservation-list.html">예약 목록</a>
+          <a href="reservation-detail.html">예약 상세</a>
+          <a href="incoming-call.html">수신 전화</a>
+          <a href="design-system.html">디자인 시스템</a>
+        </nav>
+      </header>
+
+      <div class="state-gallery">
+        <section class="state-block">
+          <span class="state-label is-loading">상태 · 세션 확인 중</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="screen-body is-centered">
+              <div class="spinner" aria-hidden="true"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-error">상태 · 세션 확인 실패</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="screen-body is-centered">
+              <span class="icon-badge is-danger" style="margin: 0 auto"><svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+              <p class="error-text" style="font-size: 0.92rem">로그인 상태를 확인하지 못했습니다.</p>
+              <p class="text-hint">네트워크 연결을 확인한 뒤 앱을 다시 열어주세요.</p>
+            </div>
+          </div>
+          <p class="state-note">원본 화면은 텍스트만 있어 삭막했던 부분 — 아이콘 · 안내 문구를 더해 재시도 맥락을 보여주도록 보완했습니다.</p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

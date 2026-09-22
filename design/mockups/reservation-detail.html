@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>예약 상세 · OnCue 목업</title>
+    <link rel="stylesheet" href="tokens.css" />
+  </head>
+  <body>
+    <div class="mockup-page">
+      <header class="mockup-header">
+        <span class="mockup-kicker">09 · Reservation detail</span>
+        <h1>예약 상세</h1>
+        <p>예약 정보를 확인하고 수정 · 취소합니다. 통화 5분 전부터는 수정 · 취소가 막힙니다.</p>
+        <nav class="mockup-nav">
+          <a href="index.html">전체 목록</a>
+          <a href="auth-gate.html">로그인 확인</a>
+          <a href="login.html">로그인</a>
+          <a href="home.html">홈 셸</a>
+          <a href="combination-list.html">조합 목록</a>
+          <a href="combination-detail.html">조합 상세</a>
+          <a href="reservation-form.html">예약 폼</a>
+          <a href="permission-guide.html">권한 안내</a>
+          <a href="reservation-list.html">예약 목록</a>
+          <a class="current" href="reservation-detail.html">예약 상세</a>
+          <a href="incoming-call.html">수신 전화</a>
+          <a href="design-system.html">디자인 시스템</a>
+        </nav>
+      </header>
+
+      <div class="state-gallery">
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 수정 가능</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>예약 상세</h2></div>
+            <div class="screen-body stack-16">
+              <div class="persona-hero" style="aspect-ratio: 16/8"><img src="images/personas/santa.png" alt="산타 할아버지" /></div>
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.15rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화</p>
+              </div>
+              <div>
+                <div class="detail-row"><span class="k">예약 상태</span><span class="v"><span class="status-chip is-scheduled">예약됨</span></span></div>
+                <div class="detail-row"><span class="k">통화 상태</span><span class="v">준비 전</span></div>
+                <div class="detail-row"><span class="k">통화 결과</span><span class="v">진행 중</span></div>
+                <div class="detail-row"><span class="k">예약 시각</span><span class="v">2026-12-24 20:30</span></div>
+                <div class="detail-row"><span class="k">수정 가능 마감</span><span class="v">2026-12-24 20:25</span></div>
+              </div>
+              <p class="pill-note">예약 시각은 정확히 보장되지 않을 수 있어요.</p>
+              <div class="btn-outline">예약 수정</div>
+              <div class="btn-text btn-danger-text" style="width: 100%">예약 취소</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-error">상태 · 수정 마감(통화 5분 전)</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>예약 상세</h2></div>
+            <div class="screen-body stack-16">
+              <div class="persona-hero" style="aspect-ratio: 16/8"><img src="images/personas/santa.png" alt="산타 할아버지" /></div>
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.15rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화</p>
+              </div>
+              <div>
+                <div class="detail-row"><span class="k">예약 상태</span><span class="v"><span class="status-chip is-scheduled">예약됨</span></span></div>
+                <div class="detail-row"><span class="k">통화 상태</span><span class="v">수신 대기</span></div>
+                <div class="detail-row"><span class="k">통화 결과</span><span class="v">진행 중</span></div>
+                <div class="detail-row"><span class="k">예약 시각</span><span class="v">2026-09-19 20:30</span></div>
+                <div class="detail-row"><span class="k">수정 가능 마감</span><span class="v">2026-09-19 20:25</span></div>
+              </div>
+              <div class="error-banner">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <p class="error-text">통화 5분 전부터는 예약을 수정할 수 없습니다.</p>
+              </div>
+              <div class="btn-outline is-disabled">예약 수정</div>
+              <div class="btn-text btn-danger-text is-disabled" style="width: 100%">예약 취소</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 취소 확인</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>예약 상세</h2></div>
+            <div class="screen-body stack-16" style="filter: brightness(0.5)">
+              <div class="persona-hero" style="aspect-ratio: 16/8"><img src="images/personas/santa.png" alt="산타 할아버지" /></div>
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.15rem; font-weight: 700">산타 할아버지</p>
+              </div>
+            </div>
+            <div class="dialog-overlay">
+              <div class="dialog-box">
+                <h3>예약을 취소할까요?</h3>
+                <p>취소한 예약은 다시 사용할 수 없습니다.</p>
+                <div class="dialog-actions">
+                  <div class="btn-text">돌아가기</div>
+                  <div class="btn-primary">예약 취소</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-error">상태 · 취소 실패</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>예약 상세</h2></div>
+            <div class="screen-body stack-16">
+              <div class="persona-hero" style="aspect-ratio: 16/8"><img src="images/personas/santa.png" alt="산타 할아버지" /></div>
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.15rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화</p>
+              </div>
+              <div>
+                <div class="detail-row"><span class="k">예약 상태</span><span class="v"><span class="status-chip is-scheduled">예약됨</span></span></div>
+                <div class="detail-row"><span class="k">예약 시각</span><span class="v">2026-12-24 20:30</span></div>
+              </div>
+              <div class="btn-outline">예약 수정</div>
+              <div class="btn-text btn-danger-text" style="width: 100%">예약 취소</div>
+            </div>
+            <div class="snackbar is-error">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span>예약을 취소하지 못했습니다. 다시 시도해주세요.</span>
+            </div>
+          </div>
+          <p class="state-note">서버 취소 요청이 실패(ApiError)하면 화면 하단에 스낵바로 안내합니다.</p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

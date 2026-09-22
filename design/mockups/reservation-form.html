@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>예약 폼 · OnCue 목업</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <style>
+      .sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 22px 22px 0 0;
+        background: var(--surface-light);
+        border-top: 1px solid var(--line-strong);
+        padding: 16px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+        box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.4);
+      }
+
+      .sheet .grabber {
+        width: 36px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--line-strong);
+        margin: 0 auto 14px;
+      }
+
+      .sheet .wheel {
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        padding: 10px 0 18px;
+      }
+
+      .sheet .wheel-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted-strong);
+        font-size: 0.92rem;
+      }
+
+      .sheet .wheel-col .selected {
+        color: var(--text);
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-page">
+      <header class="mockup-header">
+        <span class="mockup-kicker">06 · Reservation form</span>
+        <h1>예약 폼</h1>
+        <p>새 예약을 만들거나 기존 예약을 수정하는 화면입니다. 저장 중 · 저장 실패도 함께 확인하세요.</p>
+        <nav class="mockup-nav">
+          <a href="index.html">전체 목록</a>
+          <a href="auth-gate.html">로그인 확인</a>
+          <a href="login.html">로그인</a>
+          <a href="home.html">홈 셸</a>
+          <a href="combination-list.html">조합 목록</a>
+          <a href="combination-detail.html">조합 상세</a>
+          <a class="current" href="reservation-form.html">예약 폼</a>
+          <a href="permission-guide.html">권한 안내</a>
+          <a href="reservation-list.html">예약 목록</a>
+          <a href="reservation-detail.html">예약 상세</a>
+          <a href="incoming-call.html">수신 전화</a>
+          <a href="design-system.html">디자인 시스템</a>
+        </nav>
+      </header>
+
+      <div class="state-gallery">
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 신규 예약</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>통화 예약</h2></div>
+            <div class="screen-body stack-16">
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.1rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화</p>
+              </div>
+              <div class="field">
+                <label>시나리오 컨텍스트</label>
+                <div class="textarea has-value">7살 하은이가 그림 그리기를 정말 좋아해요.</div>
+              </div>
+              <div class="field">
+                <label>통화 목표</label>
+                <div class="textarea has-value">하은이가 계속 그림을 즐겁게 그릴 수 있도록 응원해주세요.</div>
+              </div>
+              <div class="card" style="display: flex; align-items: center; justify-content: space-between">
+                <div>
+                  <p class="text-hint" style="margin: 0 0 4px">통화 예정 시각</p>
+                  <p style="margin: 0; font-weight: 700">2026-12-24 20:30</p>
+                </div>
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <p class="pill-note">예약 시각은 정확히 보장되지 않을 수 있어요.</p>
+              <div class="btn-primary">예약하기</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 수정 모드</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>예약 수정</h2></div>
+            <div class="screen-body stack-16">
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.1rem; font-weight: 700">회식 탈출 친구</p>
+                <p class="text-muted" style="margin: 0">지금 집에 와야 할 것 같다는 다급한 전화</p>
+              </div>
+              <div class="field">
+                <label>시나리오 컨텍스트</label>
+                <div class="textarea has-value">2차 회식 자리인데 슬슬 나가고 싶어요.</div>
+              </div>
+              <div class="field">
+                <label>통화 목표</label>
+                <div class="textarea has-value">집에 급한 일이 생겼다고 자연스럽게 알려주세요.</div>
+              </div>
+              <div class="card" style="display: flex; align-items: center; justify-content: space-between">
+                <div>
+                  <p class="text-hint" style="margin: 0 0 4px">통화 예정 시각</p>
+                  <p style="margin: 0; font-weight: 700">2026-09-22 21:00</p>
+                </div>
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <p class="pill-note">예약 시각은 정확히 보장되지 않을 수 있어요.</p>
+              <div class="btn-primary">수정하기</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-loading">상태 · 저장 중</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>통화 예약</h2></div>
+            <div class="screen-body stack-16">
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.1rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화</p>
+              </div>
+              <div class="field">
+                <label>시나리오 컨텍스트</label>
+                <div class="textarea has-value">7살 하은이가 그림 그리기를 정말 좋아해요.</div>
+              </div>
+              <div class="field">
+                <label>통화 목표</label>
+                <div class="textarea has-value">하은이가 계속 그림을 즐겁게 그릴 수 있도록 응원해주세요.</div>
+              </div>
+              <div class="card" style="display: flex; align-items: center; justify-content: space-between; opacity: 0.6">
+                <div>
+                  <p class="text-hint" style="margin: 0 0 4px">통화 예정 시각</p>
+                  <p style="margin: 0; font-weight: 700">2026-12-24 20:30</p>
+                </div>
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <div class="btn-primary is-disabled" style="display: flex; align-items: center; justify-content: center; gap: 8px">
+                <span class="spinner" style="width: 16px; height: 16px; border-width: 2px"></span> 저장 중
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-error">상태 · 저장 실패</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>통화 예약</h2></div>
+            <div class="screen-body stack-16">
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.1rem; font-weight: 700">산타 할아버지</p>
+                <p class="text-muted" style="margin: 0">크리스마스를 기다리는 아이에게 산타의 깜짝 전화</p>
+              </div>
+              <div class="field">
+                <label>시나리오 컨텍스트</label>
+                <div class="textarea has-value">7살 하은이가 그림 그리기를 정말 좋아해요.</div>
+              </div>
+              <div class="field">
+                <label>통화 목표</label>
+                <div class="textarea has-value">하은이가 계속 그림을 즐겁게 그릴 수 있도록 응원해주세요.</div>
+              </div>
+              <div class="card" style="display: flex; align-items: center; justify-content: space-between">
+                <div>
+                  <p class="text-hint" style="margin: 0 0 4px">통화 예정 시각</p>
+                  <p style="margin: 0; font-weight: 700">2026-12-24 20:30</p>
+                </div>
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <div class="error-banner">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                <p class="error-text">같은 시간에 이미 예약된 통화가 있어요. 다른 시각을 선택해주세요.</p>
+              </div>
+              <div class="btn-primary">예약하기</div>
+            </div>
+          </div>
+          <p class="state-note">에러 문구는 API가 내려주는 메시지를 그대로 보여주는 자리이며, 예시는 서버 에러 메시지 형태를 가정했습니다.</p>
+        </section>
+
+        <section class="state-block">
+          <span class="state-label is-default">상태 · 날짜 · 시간 선택</span>
+          <div class="phone-frame">
+            <div class="status-bar"><span>9:41</span><span class="dot">●●●</span></div>
+            <div class="app-bar"><span class="back">‹</span><h2>통화 예약</h2></div>
+            <div class="screen-body stack-16" style="filter: brightness(0.5)">
+              <div>
+                <p style="margin: 0 0 4px; font-size: 1.1rem; font-weight: 700">산타 할아버지</p>
+              </div>
+              <div class="field">
+                <label>시나리오 컨텍스트</label>
+                <div class="textarea has-value">7살 하은이가 그림 그리기를 정말 좋아해요.</div>
+              </div>
+            </div>
+            <div class="sheet">
+              <div class="grabber"></div>
+              <p style="margin: 0; font-weight: 700; text-align: center">통화 예정 시각</p>
+              <div class="wheel">
+                <div class="wheel-col"><span>12월 23일</span><span class="selected">12월 24일</span><span>12월 25일</span></div>
+                <div class="wheel-col"><span>19</span><span class="selected">20</span><span>21</span></div>
+                <div class="wheel-col"><span>25</span><span class="selected">30</span><span>35</span></div>
+              </div>
+              <div class="btn-primary">확인</div>
+            </div>
+          </div>
+          <p class="state-note">iOS 표준 날짜 · 시간 선택 휠(showDatePicker/showTimePicker)을 이어서 여는 흐름을 개념적으로 표현했습니다.</p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>
