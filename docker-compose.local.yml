@@ -15,6 +15,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    networks:
+      - oncue
 
   redis:
     image: redis:7-alpine
@@ -27,6 +29,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    networks:
+      - oncue
 
   oncue-backend:
     build:
@@ -42,6 +46,7 @@ services:
       JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET}
       REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-720h}
       ONCUE_AUTH_X_CLIENT_ID: ${ONCUE_AUTH_X_CLIENT_ID}
+      ONCUE_AUTH_X_CLIENT_SECRET: ${ONCUE_AUTH_X_CLIENT_SECRET}
       X_REDIRECT_URI: ${X_REDIRECT_URI}
       VOICE_JWT_PRIVATE_KEY: ${VOICE_JWT_PRIVATE_KEY}
       VOICE_SERVER_URL: http://oncue-voice:8000
@@ -51,7 +56,7 @@ services:
       APNS_BUNDLE_ID: ${APNS_BUNDLE_ID}
       APNS_PRIVATE_KEY_FILE: /run/secrets/apns-auth-key.p8
       ONCUE_VOICE_SIGNALING_URL: ws://${ONCUE_PUBLIC_HOST}:${VOICE_PORT}/v1/signaling
-      ONCUE_VOICE_ICE_SERVERS_URLS: stun:${ONCUE_PUBLIC_HOST}:${TURN_PORT},turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=udp,turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=tcp
+      ONCUE_VOICE_ICE_SERVERS_URLS: "stun:${ONCUE_PUBLIC_HOST}:${TURN_PORT},turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=udp,turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=tcp"
       ONCUE_VOICE_ICE_SERVERS_USERNAME: ${TURN_USERNAME}
       ONCUE_VOICE_ICE_SERVERS_CREDENTIAL: ${TURN_CREDENTIAL}
       ONCUE_LOCAL_TEST_CALL_ENABLED: ${ONCUE_LOCAL_TEST_CALL_ENABLED:-true}
@@ -69,6 +74,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
+    networks:
+      - oncue
 
   oncue-voice:
     build:
@@ -90,7 +97,7 @@ services:
       OPENAI_TTS_VOICE_ID: ${OPENAI_TTS_VOICE_ID}
       OPENAI_REALTIME_MODEL: ${OPENAI_REALTIME_MODEL}
       OPENAI_REALTIME_VOICE: ${OPENAI_REALTIME_VOICE}
-      ONCUE_VOICE_TURN_URLS: turn:coturn:3478?transport=udp,turn:coturn:3478?transport=tcp
+      ONCUE_VOICE_TURN_URLS: "turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=udp,turn:${ONCUE_PUBLIC_HOST}:${TURN_PORT}?transport=tcp"
       ONCUE_VOICE_TURN_USERNAME: ${TURN_USERNAME}
       ONCUE_VOICE_TURN_CREDENTIAL: ${TURN_CREDENTIAL}
     ports:
@@ -103,9 +110,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
+    networks:
+      - oncue
 
   coturn:
     image: coturn/coturn:4.6
+    network_mode: host
     command:
       - -c
       - /etc/coturn/turnserver.conf
@@ -116,13 +126,15 @@ services:
       - --external-ip=${ONCUE_PUBLIC_HOST}
     volumes:
       - ../../oncue-voice/docker/turn/coturn.conf:/etc/coturn/turnserver.conf:ro
-    ports:
-      - "${TURN_PORT}:3478/tcp"
-      - "${TURN_PORT}:3478/udp"
-      - "${TURN_TLS_PORT}:5349/tcp"
-      - "${TURN_RELAY_PORT_START}-${TURN_RELAY_PORT_END}:${TURN_RELAY_PORT_START}-${TURN_RELAY_PORT_END}/udp"
-      - "${TURN_RELAY_PORT_START}-${TURN_RELAY_PORT_END}:${TURN_RELAY_PORT_START}-${TURN_RELAY_PORT_END}/tcp"
 
 volumes:
   oncue-mysql-data:
   oncue-redis-data:
+
+networks:
+  oncue:
+    name: ${COMPOSE_PROJECT_NAME:-oncue}_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${ONCUE_DOCKER_SUBNET:-172.30.0.0/24}

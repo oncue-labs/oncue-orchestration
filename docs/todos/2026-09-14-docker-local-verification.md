@@ -41,7 +41,7 @@ compose config is valid
 먼저 예시 환경 파일을 복사한다.
 
 ```bash
-cp .env.example .env
+cp .env.template .env.local
 ```
 
 `.env`에서 최소한 다음 값을 로컬용으로 채운다.
@@ -53,15 +53,15 @@ cp .env.example .env
 RSA 키 생성 방법은 저장소 README의 안내를 따른다. PEM 줄바꿈은 `.env` 안에서 literal `\n` 형식으로 넣는다.
 
 ```bash
-docker compose --env-file .env -f docker-compose.local.yml up --build -d
-docker compose --env-file .env -f docker-compose.local.yml ps
+docker compose --env-file .env.local -f docker-compose.local.yml up --build -d
+docker compose --env-file .env.local -f docker-compose.local.yml ps
 ```
 
 ## 5. 상태와 로그 확인
 
 ```bash
-docker compose --env-file .env -f docker-compose.local.yml ps
-docker compose --env-file .env -f docker-compose.local.yml logs --tail=100 oncue-backend oncue-voice
+docker compose --env-file .env.local -f docker-compose.local.yml ps
+docker compose --env-file .env.local -f docker-compose.local.yml logs --tail=100 oncue-backend oncue-voice
 curl http://localhost:8080/actuator/health
 curl http://localhost:8000/health
 ```

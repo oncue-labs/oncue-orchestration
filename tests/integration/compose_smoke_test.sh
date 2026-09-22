@@ -16,7 +16,7 @@ fi
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   echo "environment file not found: ${ENV_FILE}" >&2
-  echo "copy .env.example to .env and fill local values first" >&2
+  echo "copy .env.template to .env.local and fill local values first" >&2
   exit 1
 fi
 
